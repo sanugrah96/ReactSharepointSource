@@ -1,0 +1,315 @@
+/* @font-face {
+    font-family: Arial;
+    src: url("https://merivale.sharepoint.com/sites/LeadershipSkillsFramework/SiteAssets/fonts/Arial.otf");
+ }
+ @font-face {
+    font-family: Arial Bold;
+    src: url("https://merivale.sharepoint.com/sites/LeadershipSkillsFramework/SiteAssets/fonts/Arial Bold.otf");
+  } */
+
+/* @font-face {
+  font-family: HelveticaNeue;
+  src: url(https://www.mcalvain.com/fonts/Helvetica-neue.woff2);
+} */
+/* Druk Text Font Family */
+@font-face {
+  font-family: "Druk Text Trial";
+  src: url("../DrukTextMediumTrial.woff");
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Druk Text Trial";
+  src: url("../DrukTextMediumTrial.woff");
+  font-style: normal;
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: "Druk Text Trial";
+  src: url("../DrukTextMediumTrial.woff");
+  font-style: normal;
+  font-weight: 900;
+}
+
+/* Helvetica Neue Font Family */
+@font-face {
+  font-family: "Helvetica Neue";
+  src: url("../HelveticaNeue-MediumExt.woff");
+  font-style: normal;
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: "Helvetica Neue";
+  src: url("../HelveticaNeue-MediumExt.woff");
+  font-style: normal;
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: "Helvetica Neue";
+  src: url("../HelveticaNeue-MediumExt.woff");
+  font-style: normal;
+  font-weight: 700;
+}
+
+* {
+  /* font-family: HelveticaNeue !important; */
+  /* font-family: "Vend Sans", sans-serif !important; */
+  font-family: "Druk Text Trial", sans-serif !important;
+}
+[data-automation-id="CanvasZone"] {
+  background-color: #212121 !important;
+}
+#spCommandBar,
+[class^="logoImg"],
+[class^="titleSubcell"],
+[class^="logoCell"],
+[class^="actionsWrapper"] {
+  display: none !important;
+}
+
+#O365_NavHeader,
+.o365sx-appName,
+.o365cs-base .o365sx-waffle,
+.o365cs-base .o365sx-button {
+  background-color: #e9e9e9 !important;
+}
+
+.o365cs-base [class^="ms-Icon--"]:before {
+  color: #6d7385;
+}
+#O365_AppName {
+  color: #6d7385;
+}
+
+[data-automationid="SiteHeader"] {
+  align-items: center !important;
+  background-color: #212121;
+  /* display: none !important; */
+}
+[data-automationid="ShyHeader"],
+[data-automationid="MinimalHeader"] {
+  background-color: #212121;
+}
+
+#SiteHorizontalNav {
+  color: #b8b8b8;
+  font-size: 18px;
+  padding: 4px 5px;
+}
+.ms-HorizontalNavItem-linkText.is-selected {
+  background-color: rgba(77, 77, 77);
+  color: #ffffff !important;
+  border-color: #ffffff;
+  padding: 5px;
+}
+.ms-HorizontalNavItem {
+  margin-right: 8px !important;
+}
+#SiteHorizontalNav {
+  color: #b2b2b2;
+  font-size: 18px;
+}
+.Home-banner {
+  /* background-image:url('../Images/Home-banner.png'); */
+  /* background: linear-gradient(0deg, rgb(49 49 49 / 30%), rgb(49 49 49)), url('../Images//sub-banner.png'); */
+  height: 300px;
+  width: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+/* .container {
+  width: 1200px;
+  margin: 0 auto;
+} */
+.Home-banner-wrapper {
+  padding: 40px 0;
+}
+.Home-banner-title {
+  font-style: normal;
+  font-size: 44px;
+  line-height: 48px;
+  align-items: center;
+  color: #ffffff;
+  margin: 15px 0 0 0;
+  word-wrap: break-word;
+  font-weight: 600;
+  text-align: center;
+}
+.Home-banner-description {
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 22px;
+  color: #ffffff;
+  margin: 15px 0 0 0;
+  word-wrap: break-word;
+  /* width: 60%; */
+  font-family: "Helvetica Neue" !important;
+      margin: 15px auto 0 auto;
+      text-align: center;
+}
+/* [data-automation-id="CanvasZone"] div{
+    margin: 0;
+    width: 100%;
+}
+[data-automation-id="CanvasZone"]{
+    margin: 0;
+} */
+[data-automation-id="pageHeader"] {
+  display: none;
+}
+/* #CommentsWrapper{
+    display: none;
+} */
+/* .nav-links-wrapper a{
+    font-family: 'Roboto';
+    font-style: normal;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 19px;
+    color: #7E2A8D;
+} */
+/* #sp-appBar {
+  display: none;
+} */
+/* .text-center {
+  text-align: center;
+} */
+.w-50 {
+  width: 85%;
+  margin: 0 auto;
+}
+/* #spSiteHeader {
+  display: none;
+} */
+
+.search {
+  padding-left: 50px;
+}
+
+.chat {
+  padding-right: 50px;
+}
+
+.Home-banner .ms-SearchBox {
+  padding: 12px 10px;
+  height: auto;
+  border-radius: 8px;
+  font-weight: 500;
+  /* width: 90%; */
+  margin-top: 15px;
+}
+.Home-banner .ms-SearchBox::after {
+  border: none;
+}
+.ms-SearchBox-icon {
+  font-family: "Fluent MDL2 Hybrid Icons" !important;
+}
+/* .ms-HorizontalNavItem-linkText{
+    font-weight: 500!important;
+} */
+/* .ms-HorizontalNavItem-link{
+    color: #113F8A;
+} */
+.ms-HorizontalNavItems {
+  margin: 10px 0 0 0;
+}
+
+.ms-SearchBox-iconContainer {
+  margin: 0 3px;
+}
+.d-flex-search {
+  display: flex;
+  justify-content: center;
+}
+
+@media only screen and (max-width: 720px) {
+  .container {
+    width: 100%;
+  }
+  .Home-banner {
+    height: 370px;
+    background-size: cover;
+  }
+  .Home-banner-wrapper {
+    padding: 40px 0;
+  }
+  .w-50 {
+    width: 95%;
+  }
+  .Home-banner-title {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .Home-banner-description {
+    /* font-size: 16px; */
+    line-height: 20px;
+  }
+  .search {
+    padding: 0;
+  }
+  .chat {
+    padding: 0;
+  }
+  .Home-banner .ms-SearchBox {
+    margin: 5px auto;
+  }
+  .d-flex-search {
+    display: block;
+  }
+}
+
+[data-automation-id="CanvasZone-SectionContainer"] {
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* [data-automation-id="CanvasControl"] {
+  margin: 0 0 !important;
+  padding: 0px !important;
+} */
+/* [data-automation-id="CanvasSection"] {
+  padding: 0px !important;
+} */
+
+/* [data-automation-id="CanvasZone"] {
+  padding: 0px !important;
+  width: -webkit-fill-available !important;
+} */
+[data-automation-id="webPartTitleReadMode"] {
+  color: rgb(0, 117, 193) !important;
+  font-size: 22px !important;
+  font-weight: 700 !important;
+}
+[data-interception="propagate"] {
+  display: none;
+}
+
+#CommentsWrapper {
+  display: none;
+}
+
+/* [data-automation-id="webPartTitleReadMode"] {
+  color: rgb(0, 117, 193) !important;
+  font-weight: bold;
+} */
+
+.srchbutton {
+  background-color: #eb6526;
+  color: #ffffff;
+  padding: 12px 17px;
+  font-size: 14px;
+  border: none;
+  border-radius: 5px;
+  margin-top: 17px;
+  font-family: "Helvetica Neue" !important;
+}
+
+#chatSearchbtn {
+  font-family: system-ui !important;
+}

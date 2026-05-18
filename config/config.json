@@ -1,0 +1,82 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "banner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/banner/BannerWebPart.js",
+          "manifest": "./src/webparts/banner/BannerWebPart.manifest.json"
+        }
+      ]
+    },
+    "home-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/home/HomeWebPart.js",
+          "manifest": "./src/webparts/home/HomeWebPart.manifest.json"
+        }
+      ]
+    },
+    "announcement-detail-page-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/announcementDetailPage/AnnouncementDetailPageWebPart.js",
+          "manifest": "./src/webparts/announcementDetailPage/AnnouncementDetailPageWebPart.manifest.json"
+        }
+      ]
+    },
+    "page-banner-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/pageBanner/PageBannerWebPart.js",
+          "manifest": "./src/webparts/pageBanner/PageBannerWebPart.manifest.json"
+        }
+      ]
+    },
+    "celebration-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/celebration/CelebrationWebPart.js",
+          "manifest": "./src/webparts/celebration/CelebrationWebPart.manifest.json"
+        }
+      ]
+    },
+    "events-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/events/EventsWebPart.js",
+          "manifest": "./src/webparts/events/EventsWebPart.manifest.json"
+        }
+      ]
+    },
+    "birthdays-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/birthdays/BirthdaysWebPart.js",
+          "manifest": "./src/webparts/birthdays/BirthdaysWebPart.manifest.json"
+        }
+      ]
+    },
+    "subpage-template-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/subpageTemplate/SubpageTemplateWebPart.js",
+          "manifest": "./src/webparts/subpageTemplate/SubpageTemplateWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "BannerWebPartStrings": "lib/webparts/banner/loc/{locale}.js",
+    "HomeWebPartStrings": "lib/webparts/home/loc/{locale}.js",
+    "PropertyControlStrings": "node_modules/@pnp/spfx-property-controls/lib/loc/{locale}.js",
+    "AnnouncementDetailPageWebPartStrings": "lib/webparts/announcementDetailPage/loc/{locale}.js",
+    "PageBannerWebPartStrings": "lib/webparts/pageBanner/loc/{locale}.js",
+    "CelebrationWebPartStrings": "lib/webparts/celebration/loc/{locale}.js",
+    "EventsWebPartStrings": "lib/webparts/events/loc/{locale}.js",
+    "BirthdaysWebPartStrings": "lib/webparts/birthdays/loc/{locale}.js",
+    "SubpageTemplateWebPartStrings": "lib/webparts/subpageTemplate/loc/{locale}.js"
+  }
+}
