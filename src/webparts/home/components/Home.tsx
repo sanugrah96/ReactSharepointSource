@@ -19,6 +19,7 @@ import {
 import { Calendar as MyCalendar, momentLocalizer } from "react-big-calendar";
 import * as $ from "jquery";
 import { sp } from "../../../services/pnpClient";
+import * as XLSX from "xlsx";
 import {
   Accordion,
   AccordionItem,
@@ -81,10 +82,23 @@ interface NavNode {
   children: NavNode[];
 }
 
+type BulkEventRow = {
+  Title: string;
+  Category?: string;
+  Time?: string;
+  Link?: string;
+  Date?: string;        // normalized to 'YYYY-MM-DD' or ''
+  Details?: string;
+  Description?: string;
+  Image?: string;       // filename from spreadsheet (e.g. "hot-yoga.jpg")
+  __row: number;        // original 1-based row number for error reporting
+};
+
 export interface IHomeState {
   quickLinks: any;
   announcementData: any;
   companyevents: any;
+  companyeventsLoading: boolean;
   aboutUS: any;
   news: any;
   celebrationData: any;
@@ -142,6 +156,19 @@ export interface IHomeState {
   showEventDetail: boolean;
   allCalendarEvents: any[];
   quickLinksOpen: boolean;
+  // Bulk import state
+  bulkImportOpen: boolean;
+  bulkImportFileName: string;
+  bulkImportImageFiles: File[];
+  bulkImportRows: BulkEventRow[];
+  bulkImportParseError: string | null;
+  bulkImportRunning: boolean;
+  bulkImportProgress: { done: number; total: number };
+  bulkImportResults: null | {
+    added: BulkEventRow[];
+    skipped: BulkEventRow[];
+    failed: { row: BulkEventRow; error: string }[];
+  };
 }
 
 export default class Home extends React.Component<IHomeProps, IHomeState> {
@@ -159,6 +186,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       quickLinks: [],
       announcementData: [],
       companyevents: [],
+      companyeventsLoading: true,
       aboutUS: [],
       news: [],
       celebrationData: [],
@@ -215,6 +243,15 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       showEventDetail: false,
       allCalendarEvents: [],
       quickLinksOpen: false,
+      // Bulk import state
+      bulkImportOpen: false,
+      bulkImportFileName: '',
+      bulkImportImageFiles: [],
+      bulkImportRows: [],
+      bulkImportParseError: null,
+      bulkImportRunning: false,
+      bulkImportProgress: { done: 0, total: 0 },
+      bulkImportResults: null,
     };
 
     // Bind routing methods
@@ -233,7 +270,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       return "Good Evening";
     }
   }
-  public render(): React.ReactElement<IHomeProps> {
+  public render(): JSX.Element {
     const {
       description,
       isDarkTheme,
@@ -275,6 +312,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       this.state.currentItemId;
 
     return (
+      <>
       <section className={`homecontainer${isDetailPage ? " detail-page" : ""}`}>
         {!isDetailPage && (
           <header className='top-bar'>
@@ -405,7 +443,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                       ([categoryName, subNodes]: [string, NavNode[]]) => (
                         <AccordionItem
                           key={categoryName}
-                          uuid={categoryName.replace(/ & | /g, "-")}
+                          uuid={categoryName.replace(/[\s&]+/g, "-")}
                         >
                           <AccordionItemHeading>
                             <AccordionItemButton>
@@ -428,7 +466,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                     /* ✅ NESTED ACCORDION (Training → Courses/Classes) */
                                     <Accordion allowZeroExpanded={true}>
                                       <AccordionItem
-                                        uuid={`${categoryName}-${subNode.title}`}
+                                        uuid={`${categoryName}-${subNode.title}`.replace(/[\s&]+/g, "-")}
                                       >
                                         <AccordionItemHeading>
                                           <AccordionItemButton
@@ -630,14 +668,20 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                   </div>
 
                   <div className='card-row events-row'>
-                    {this.state.companyevents.length > 0 &&
+                    {this.state.companyeventsLoading ? (
+                      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px", gridColumn: "1 / -1" }}>
+                        <div style={{ width: "36px", height: "36px", border: "4px solid #333", borderTopColor: "#ff6b35", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                      </div>
+                    ) : this.state.companyevents.length > 0 &&
                       this.state.companyevents.map((el, ind) => {
                         const imageURL =
                           el.AttachmentFiles && el.AttachmentFiles.length > 0
                             ? el.AttachmentFiles[0].ServerRelativeUrl
                             : el.Image
                               ? JSON.parse(el.Image).serverRelativeUrl
-                              : require(`../assets/Event.jpg`);
+                              : (el.Link && el.Link.Url && el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i))
+                                ? el.Link.Url
+                                : require(`../assets/Event.jpg`);
                         let badgeClass = "tag event-meeting";
                         const category = el.Category
                           ? el.Category.toLowerCase()
@@ -2102,9 +2146,22 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                     ) : (
                       <>
                         <div className='events-card'>
-                          <div className='card-header'>
-                            <span className='accent'></span>
-                            <h3>Events</h3>
+                          <div className='card-header' style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center' }}>
+                              <span className='accent'></span>
+                              <h3 style={{ margin: 0 }}>Events</h3>
+                            </div>
+                            <button
+                              type='button'
+                              onClick={() => this.setState({ bulkImportOpen: true })}
+                              style={{
+                                fontSize: 12, padding: '4px 10px', border: '1px solid #ff7a00',
+                                background: 'transparent', color: '#ff7a00', borderRadius: 4, cursor: 'pointer'
+                              }}
+                              title='Bulk upload events from Excel + images'
+                            >
+                              Bulk Upload
+                            </button>
                           </div>
                           {this.getEventsForCurrentMonth().length > 0 ? (
                             this.getEventsForCurrentMonth().map((eve, ind) => {
@@ -2748,7 +2805,19 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                     color: "white",
                                   }}
                                 >
-                                  <video controls width='100%' muted preload="none">
+                                  <video
+                                    controls
+                                    width='100%'
+                                    muted
+                                    preload="metadata"
+                                    playsInline
+                                    onLoadedMetadata={(e) => {
+                                      const v = e.currentTarget;
+                                      if (v.currentTime === 0) {
+                                        try { v.currentTime = 0.1; } catch {}
+                                      }
+                                    }}
+                                  >
                                     <source
                                       src={`${this.props.siteUrl}/${video.FileRef}`}
                                       type='video/mp4'
@@ -2884,7 +2953,13 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
               <div className="card-row ">
                 {this.state.announcementData.length > 0 &&
                   this.state.announcementData.map((ele, ind) => {
-                    let imageURL = ele.AttachmentFiles.length > 0 ? ele.AttachmentFiles[0].ServerRelativeUrl : ele.Image ? JSON.parse(ele.Image).serverRelativeUrl : require(`../assets/Announcement.jpg`);
+                    let imageURL = ele.AttachmentFiles && ele.AttachmentFiles.length > 0 
+                      ? ele.AttachmentFiles[0].ServerRelativeUrl 
+                      : ele.Image 
+                        ? JSON.parse(ele.Image).serverRelativeUrl 
+                        : (ele.Link && ele.Link.Url && ele.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i))
+                          ? ele.Link.Url
+                          : require(`../assets/Announcement.jpg`);
                     return (
                       <a href={ele.Link ? ele.Link.Url : "#"} className="card" target="_blank" data-interception="off" style={{ textDecoration: "none", color: "white" }}>
                         <div className="tag">{ele.Category}</div>
@@ -2899,8 +2974,21 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
             </div>
 
             <div className="Announcement">
-              <div className="section-header">
-                <h2>Company Events</h2>
+              <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <h2 style={{ margin: 0 }}>Company Events</h2>
+                  <button
+                    type='button'
+                    onClick={() => this.setState({ bulkImportOpen: true })}
+                    style={{
+                      fontSize: 12, padding: '4px 10px', border: '1px solid #ff7a00',
+                      background: 'transparent', color: '#ff7a00', borderRadius: 4, cursor: 'pointer'
+                    }}
+                    title='Bulk upload events from Excel + images'
+                  >
+                    Bulk Upload
+                  </button>
+                </div>
                 <a
                   href="#"
                   onClick={(e) => {
@@ -2914,15 +3002,30 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
               </div>
 
               <div className="card-row events-row">
-                {this.state.companyevents.length > 0 &&
+                {this.state.companyeventsLoading ? (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px", gridColumn: "1 / -1" }}>
+                    <div style={{ width: "36px", height: "36px", border: "4px solid #333", borderTopColor: "#ff6b35", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                  </div>
+                ) : this.state.companyevents.length > 0 &&
                   this.state.companyevents.map((el, ind) => {
-                    let imageURL = el.AttachmentFiles.length > 0 ? el.AttachmentFiles[0].ServerRelativeUrl : el.Image ? JSON.parse(el.Image).serverRelativeUrl : require(`../assets/Event.jpg`);
+                    let imageURL = el.AttachmentFiles && el.AttachmentFiles.length > 0 
+                      ? el.AttachmentFiles[0].ServerRelativeUrl 
+                      : el.Image 
+                        ? JSON.parse(el.Image).serverRelativeUrl 
+                        : (el.Link && el.Link.Url && el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i))
+                          ? el.Link.Url
+                          : require(`../assets/Event.jpg`);
                     const eventSlug = `${generateSlug(el.Title)}-${el.ID}`;
                     return (
                       <a
-                        href={`#/events/${eventSlug}`}
+                        href={el.Link && el.Link.Url && !el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i) ? el.Link.Url : `#/events/${eventSlug}`}
+                        target={el.Link && el.Link.Url && !el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i) ? "_blank" : "_self"}
+                        data-interception="off"
                         className="card"
                         onClick={(e) => {
+                          if (el.Link && el.Link.Url && !el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i)) {
+                            return; // Let browser handle external link
+                          }
                           e.preventDefault();
                           const eventData = {
                             id: el.ID,
@@ -3044,6 +3147,193 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
           </main>
         </div> */}
       </section>
+
+      {/* ===== Bulk Import Modal ===== */}
+      {this.state.bulkImportOpen && (() => {
+        const { bulkImportRows, bulkImportFileName, bulkImportImageFiles, bulkImportParseError,
+                bulkImportRunning, bulkImportProgress, bulkImportResults } = this.state;
+
+        // Image match summary
+        const rowsWithImage = bulkImportRows.filter(r => r.Image);
+        const imageByName = new Map<string, boolean>();
+        bulkImportImageFiles.forEach(f => imageByName.set(f.name.toLowerCase(), true));
+        const matchedImages = rowsWithImage.filter(r => imageByName.has((r.Image || '').toLowerCase())).length;
+        const missingImages = rowsWithImage.length - matchedImages;
+
+        return (
+          <>
+            {/* Backdrop */}
+            <div
+              onClick={() => !bulkImportRunning && this.setState({ bulkImportOpen: false })}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9998,
+              }}
+            />
+            {/* Modal */}
+            <div style={{
+              position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+              background: '#212121', color: '#fff', borderRadius: 10, zIndex: 9999,
+              width: 'min(90vw, 680px)', maxHeight: '90vh', overflowY: 'auto',
+              padding: '24px 28px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
+              fontFamily: 'inherit',
+            }}>
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: '#ff7a00' }}>Bulk Upload — Company Events</h2>
+                <button
+                  type='button'
+                  disabled={bulkImportRunning}
+                  onClick={() => this.setState({ bulkImportOpen: false, bulkImportResults: null, bulkImportParseError: null })}
+                  style={{ background: 'none', border: 'none', color: '#aaa', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}
+                  aria-label='Close bulk upload modal'
+                >×</button>
+              </div>
+
+              {/* Spreadsheet file picker */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#ccc' }}>
+                  1. Pick spreadsheet file (.xlsx / .xls / .csv)
+                </label>
+                <input
+                  id='bulk-xlsx-input'
+                  type='file'
+                  accept='.xlsx,.xls,.csv'
+                  disabled={bulkImportRunning}
+                  onChange={e => e.target.files?.[0] && this.handleBulkFile(e.target.files[0])}
+                  style={{ color: '#fff' }}
+                />
+                {bulkImportFileName && !bulkImportParseError && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#8f8' }}>
+                    ✓ {bulkImportFileName} — {bulkImportRows.length} row{bulkImportRows.length !== 1 ? 's' : ''} with Title
+                    {rowsWithImage.length > 0 && (
+                      <>, {rowsWithImage.length} with Image filenames
+                        {matchedImages > 0 && <span style={{ color: '#8f8' }}> ({matchedImages} matched)</span>}
+                        {missingImages > 0 && <span style={{ color: '#fa0' }}> ({missingImages} missing from picker)</span>}
+                      </>
+                    )}
+                  </div>
+                )}
+                {bulkImportParseError && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: '#f88' }}>⚠ {bulkImportParseError}</div>
+                )}
+              </div>
+
+              {/* Image files picker (Hidden as requested) */}
+              {/* Help text */}
+              <div style={{ background: '#2a2a3e', borderRadius: 6, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#bbb', lineHeight: 1.6 }}>
+                <strong style={{ color: '#ff7a00' }}>Column guide:</strong> <strong>Title</strong> (required), Category, Time, Link, Date (Excel Date or YYYY-MM-DD), Details, Description, Image (filename only e.g. <em>hot-yoga.jpg</em>)<br />
+                Dedup key: Title + Date (day). Rows already in the list are skipped.
+              </div>
+
+              {/* Progress bar */}
+              {bulkImportRunning && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: '#ccc', marginBottom: 4 }}>
+                    Importing… {bulkImportProgress.done} / {bulkImportProgress.total}
+                  </div>
+                  <div style={{ background: '#333', borderRadius: 4, height: 8 }}>
+                    <div style={{
+                      background: '#ff7a00', borderRadius: 4, height: '100%',
+                      width: `${bulkImportProgress.total ? Math.round(bulkImportProgress.done / bulkImportProgress.total * 100) : 0}%`,
+                      transition: 'width 0.3s',
+                    }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Results table */}
+              {bulkImportResults && (() => {
+                const { added, skipped, failed } = bulkImportResults;
+                const allRows = [
+                  ...added.map(r => ({ row: r, status: 'added' as const, detail: '' })),
+                  ...skipped.map(r => ({ row: r, status: 'skipped' as const, detail: '' })),
+                  ...failed.map(f => ({ row: f.row, status: 'failed' as const, detail: f.error })),
+                ].sort((a, b) => a.row.__row - b.row.__row);
+                const failedCsv = failed.map(f =>
+                  [f.row.__row, f.row.Title, f.row.Date, f.error].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','))
+                  .join('\n');
+                return (
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 13, marginBottom: 8 }}>
+                      <span style={{ color: '#8f8', marginRight: 12 }}>✓ {added.length} added</span>
+                      <span style={{ color: '#aaa', marginRight: 12 }}>↷ {skipped.length} skipped</span>
+                      <span style={{ color: failed.length ? '#f88' : '#aaa' }}>✗ {failed.length} failed</span>
+                    </div>
+                    <div style={{ overflowX: 'auto', maxHeight: 280 }}>
+                      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 12 }}>
+                        <thead>
+                          <tr style={{ background: '#2a2a3e' }}>
+                            {['Row #','Title','Date','Status','Detail'].map(h => (
+                              <th key={h} style={{ padding: '5px 8px', textAlign: 'left', borderBottom: '1px solid #444', color: '#ccc', whiteSpace: 'nowrap' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {allRows.map((item, i) => (
+                            <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : '#252535' }}>
+                              <td style={{ padding: '4px 8px', borderBottom: '1px solid #333' }}>{item.row.__row}</td>
+                              <td style={{ padding: '4px 8px', borderBottom: '1px solid #333' }}>{item.row.Title}</td>
+                              <td style={{ padding: '4px 8px', borderBottom: '1px solid #333' }}>{item.row.Date || '—'}</td>
+                              <td style={{ padding: '4px 8px', borderBottom: '1px solid #333', color: item.status === 'added' ? '#8f8' : item.status === 'failed' ? '#f88' : '#aaa' }}>
+                                {item.status === 'added' ? '✓ added' : item.status === 'skipped' ? '↷ skipped' : '✗ failed'}
+                              </td>
+                              <td style={{ padding: '4px 8px', borderBottom: '1px solid #333', color: '#fa0', maxWidth: 220, wordBreak: 'break-word' }}>
+                                {item.detail || ((item.row as any).__imageUploaded ? <span style={{ color: '#8f8' }}>🖼️ Image attached</span> : (item.row.Image ? <span style={{ color: '#fa0' }}>Image skipped</span> : ''))}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {failed.length > 0 && (
+                      <button
+                        type='button'
+                        onClick={() => {
+                          const blob = new Blob([`"Row #","Title","Date","Error"\n${failedCsv}`], { type: 'text/csv' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a'); a.href = url; a.download = 'bulk-import-failures.csv'; a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        style={{ marginTop: 8, fontSize: 12, padding: '4px 10px', border: '1px solid #f88', background: 'transparent', color: '#f88', borderRadius: 4, cursor: 'pointer' }}
+                      >
+                        Copy failed rows as CSV
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+                <button
+                  type='button'
+                  disabled={bulkImportRunning}
+                  onClick={() => this.setState({ bulkImportOpen: false, bulkImportResults: null, bulkImportParseError: null })}
+                  style={{ fontSize: 13, padding: '6px 18px', border: '1px solid #555', background: 'transparent', color: '#ccc', borderRadius: 4, cursor: 'pointer' }}
+                >
+                  {bulkImportResults ? 'Done' : 'Cancel'}
+                </button>
+                {!bulkImportResults && (
+                  <button
+                    type='button'
+                    id='bulk-run-import-btn'
+                    disabled={bulkImportRunning || bulkImportRows.length === 0 || !!bulkImportParseError}
+                    onClick={() => this.runBulkImport()}
+                    style={{
+                      fontSize: 13, padding: '6px 18px',
+                      background: (bulkImportRunning || bulkImportRows.length === 0 || !!bulkImportParseError) ? '#555' : '#ff7a00',
+                      border: 'none', color: '#fff', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
+                    }}
+                  >
+                    {bulkImportRunning ? 'Running…' : 'Run Import'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      })()}
+      </>
     );
 
     // return (
@@ -4763,7 +5053,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .orderBy("Modified", false)
         .top(5)();
 
-
       if (CompanyNewsDetails.length > 0) {
         this.setState({ announcementData: CompanyNewsDetails });
       }
@@ -4781,44 +5070,58 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .orderBy("Date", false)
         .top(5)();
 
-
       if (CompanyEventsDetails.length > 0) {
-        // Try to fetch Description and Details for each event separately (columns may not exist)
+        let skipDescription = false;
+        let skipDetailsUpper = false;
+        let skipDetailsLower = false;
+
         for (let i = 0; i < CompanyEventsDetails.length; i++) {
-          try {
-            const descItem = await sp.web.lists
-              .getByTitle("Company Events")
-              .items.getById(CompanyEventsDetails[i].ID)
-              .select("Description")();
+          if (!skipDescription) {
+            try {
+              const descItem = await sp.web.lists
+                .getByTitle("Company Events")
+                .items.getById(CompanyEventsDetails[i].ID)
+                .select("Description")();
 
-            CompanyEventsDetails[i].Description = descItem.Description || "";
-          } catch (e) {
-            CompanyEventsDetails[i].Description = "";
+              CompanyEventsDetails[i].Description = descItem.Description;
+            } catch (e) {
+              skipDescription = true;
+            }
           }
-          try {
-            const detailItem = await sp.web.lists
-              .getByTitle("Company Events")
-              .items.getById(CompanyEventsDetails[i].ID)
-              .select("Details")();
 
-            CompanyEventsDetails[i].Details = detailItem.Details || "";
-          } catch (e) {
+          if (!skipDetailsUpper) {
+            try {
+              const detailItem = await sp.web.lists
+                .getByTitle("Company Events")
+                .items.getById(CompanyEventsDetails[i].ID)
+                .select("Details")();
+
+              CompanyEventsDetails[i].details = detailItem.Details;
+            } catch (e) {
+              skipDetailsUpper = true;
+            }
+          }
+
+          if (skipDetailsUpper && !skipDetailsLower) {
             try {
               const detailItem = await sp.web.lists
                 .getByTitle("Company Events")
                 .items.getById(CompanyEventsDetails[i].ID)
                 .select("details")();
 
-              CompanyEventsDetails[i].Details = detailItem.details || "";
-            } catch (e2) {
-              CompanyEventsDetails[i].Details = "";
+              CompanyEventsDetails[i].details = detailItem.details;
+            } catch (error) {
+              skipDetailsLower = true;
             }
           }
         }
-        this.setState({ companyevents: CompanyEventsDetails });
+        this.setState({ companyevents: CompanyEventsDetails, companyeventsLoading: false });
+      } else {
+        this.setState({ companyeventsLoading: false });
       }
     } catch (error) {
       console.log(error);
+      this.setState({ companyeventsLoading: false });
     }
   };
 
@@ -5411,5 +5714,293 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       }
     });
     this.pagination2(1, SearchUser);
+  };
+
+  // ===== Bulk Import Handlers =====
+
+  private normalizeBulkDate(v: any): string {
+    if (v == null || v === '') return '';
+    if (v instanceof Date) return moment(v).format('YYYY-MM-DD');
+    if (typeof v === 'number') {                          // Excel date serial
+      const d = XLSX.SSF.parse_date_code(v);
+      if (!d) return '';
+      return moment({ y: d.y, M: d.m - 1, d: d.d }).format('YYYY-MM-DD');
+    }
+    const formats = [
+      'YYYY-MM-DD', 
+      'M/D/YYYY', 
+      'MM/DD/YYYY', 
+      'M/D/YYYY h:mm A', 
+      'M/D/YYYY hh:mm A', 
+      'MM/DD/YYYY hh:mm A', 
+      'MM/DD/YYYY h:mm A', 
+      'D MMM YYYY', 
+      moment.ISO_8601
+    ];
+    let m = moment(String(v).trim(), formats, true);
+    if (!m.isValid()) m = moment(String(v).trim());
+    return m.isValid() ? m.format('YYYY-MM-DD') : '';
+  }
+
+  private bulkDedupKey(title: string, isoDate: string): string {
+    return `${(title || '').trim().toLowerCase()}::${isoDate}`;
+  }
+
+  private handleBulkFile = async (file: File): Promise<void> => {
+    try {
+      const isCsv = file.name.toLowerCase().endsWith('.csv');
+      let wb: XLSX.WorkBook;
+      if (isCsv) {
+        const text = await file.text();
+        wb = XLSX.read(text, { type: 'string', cellDates: true });
+      } else {
+        const buf = await file.arrayBuffer();
+        wb = XLSX.read(buf, { type: 'array', cellDates: true });
+        
+        // Extract embedded images using exceljs dynamically
+        const autoImages: File[] = [];
+        const rowToImageMap = new Map<number, string>();
+        try {
+          // @ts-ignore
+          const ExcelJSPkg = await import('exceljs/dist/exceljs.min.js');
+          const ExcelJS = ExcelJSPkg.default || ExcelJSPkg;
+          const workbook = new ExcelJS.Workbook();
+          await workbook.xlsx.load(buf);
+          const worksheet = workbook.worksheets[0];
+          
+          let imgCount = 0;
+          for (const image of worksheet.getImages()) {
+            const imgInfo = workbook.getImage(image.imageId);
+            if (imgInfo && image.range?.tl) {
+              const nativeRow = image.range.tl.nativeRow; // 0-indexed row in ExcelJS
+              const excelRow1Indexed = nativeRow + 1;     // match 1-indexed UI row
+              const filename = `auto_img_row_${excelRow1Indexed}.${imgInfo.extension}`;
+              const blob = new Blob([imgInfo.buffer], { type: `image/${imgInfo.extension}` });
+              autoImages.push(new File([blob], filename, { type: `image/${imgInfo.extension}` }));
+              rowToImageMap.set(excelRow1Indexed, filename);
+              imgCount++;
+            }
+          }
+          
+          // Fallback: If only one image was found but its nativeRow was offset strangely, map it to the first data row (row 1)
+          if (imgCount === 1 && !rowToImageMap.has(1)) {
+            const filename = `auto_img_row_fallback.${workbook.getImage(worksheet.getImages()[0].imageId).extension}`;
+            autoImages[0] = new File([new Blob([workbook.getImage(worksheet.getImages()[0].imageId).buffer])], filename);
+            rowToImageMap.set(1, filename);
+          }
+        } catch(e) {
+          console.warn("Failed to extract embedded images", e);
+        }
+        console.log(`Auto-extracted ${autoImages.length} images from Excel. Map:`, rowToImageMap);
+        
+        // Merge extracted images with any manually uploaded images
+        this.setState(s => ({
+          bulkImportImageFiles: [...s.bulkImportImageFiles.filter(f => !f.name.startsWith('auto_img_row_')), ...autoImages]
+        }));
+
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<any>(ws, { defval: '', raw: true });
+        
+        let unmappedImages = [...autoImages];
+
+        const rows: BulkEventRow[] = json.map((r, i) => {
+          return {
+            Title: String(r.Title ?? '').trim(),
+            Category: String(r.Category ?? '').trim(),
+            Time: String(r.Time ?? '').trim(),
+            Link: String(r.Link ?? '').trim(),
+            Date: this.normalizeBulkDate(r.Date),
+            Details: String(r.Details ?? '').trim(),
+            Description: String(r.Description ?? '').trim(),
+            Image: String(r.Image ?? '').trim(), 
+            __row: i + 2,
+          };
+        }).filter(r => r.Title);
+
+        // Sequentially map auto-extracted images to the valid rows
+        rows.forEach(r => {
+          if (!r.Image && unmappedImages.length > 0) {
+            r.Image = unmappedImages.shift()!.name;
+          }
+        });
+
+        this.setState({
+          bulkImportRows: rows, bulkImportFileName: file.name,
+          bulkImportParseError: null, bulkImportResults: null,
+        });
+        return; // Early return since we are done for XLSX
+      }
+      
+      // Fallback for CSVs
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<any>(ws, { defval: '', raw: true });
+      const rows: BulkEventRow[] = json.map((r, i) => ({
+        Title: String(r.Title ?? '').trim(),
+        Category: String(r.Category ?? '').trim(),
+        Time: String(r.Time ?? '').trim(),
+        Link: String(r.Link ?? '').trim(),
+        Date: this.normalizeBulkDate(r.Date),
+        Details: String(r.Details ?? '').trim(),
+        Description: String(r.Description ?? '').trim(),
+        Image: String(r.Image ?? '').trim(),
+        __row: i + 2,
+      })).filter(r => r.Title);
+      this.setState({
+        bulkImportRows: rows, bulkImportFileName: file.name,
+        bulkImportParseError: null, bulkImportResults: null,
+      });
+    } catch (e: any) {
+      this.setState({
+        bulkImportParseError: e?.message || 'Failed to parse file',
+        bulkImportRows: [],
+      });
+    }
+  };
+
+  private handleBulkImageFiles = (files: FileList | null): void => {
+    this.setState({ bulkImportImageFiles: files ? Array.from(files) : [] });
+  };
+
+  private async uploadImageToSiteAssets(file: File): Promise<{ serverRelativeUrl: string; fileName: string }> {
+    const webRelUrl = this.props.spfxContext.pageContext.web.serverRelativeUrl;
+    const folderRelUrl = `${webRelUrl}/SiteAssets/CompanyEventsBulkImport`;
+    
+    // Ensure folder exists by attempting to create it. 
+    // If it already exists, SharePoint throws a 400 error which we safely ignore.
+    try {
+      await sp.web.folders.addUsingPath(folderRelUrl);
+    } catch (e) {
+      // Ignored: Folder already exists
+    }
+
+    const folder = sp.web.getFolderByServerRelativePath(folderRelUrl);
+    const safeName = file.name.replace(/[^\w.\-]/g, '_');
+    const result = await folder.files.addUsingPath(safeName, await file.arrayBuffer(), { Overwrite: true });
+    const serverRelativeUrl = (result as any).data?.ServerRelativeUrl || (result as any).ServerRelativeUrl;
+    return { serverRelativeUrl, fileName: safeName };
+  }
+
+  private buildImageFieldValue(serverRelativeUrl: string, fileName: string): string {
+    return JSON.stringify({
+      type: 'thumbnail',
+      fileName,
+      serverRelativeUrl,
+      fieldName: 'Image',
+    });
+  }
+
+  private runBulkImport = async (): Promise<void> => {
+    const rows = this.state.bulkImportRows;
+    if (!rows.length) return;
+    this.setState({ bulkImportRunning: true, bulkImportProgress: { done: 0, total: rows.length } });
+
+    // Fetch existing items for dedup (Title + Date)
+    let existing: { Title: string; Date: string }[] = [];
+    try {
+      existing = await sp.web.lists.getByTitle('Company Events').items.select('Title', 'Date').top(5000)();
+    } catch (e: any) {
+      this.setState({
+        bulkImportRunning: false,
+        bulkImportParseError: `Could not load existing list: ${e?.message || e}`,
+      });
+      return;
+    }
+    const seen = new Set(existing.map(x =>
+      this.bulkDedupKey(x.Title, x.Date ? moment(x.Date).format('YYYY-MM-DD') : '')
+    ));
+
+    // Index image picker files by lowercase filename
+    const imageByName = new Map<string, File>();
+    for (const f of this.state.bulkImportImageFiles) imageByName.set(f.name.toLowerCase(), f);
+
+    const added: BulkEventRow[] = [];
+    const skipped: BulkEventRow[] = [];
+    const failed: { row: BulkEventRow; error: string }[] = [];
+
+    // Process rows with limited concurrency (3) to avoid overwhelming SP
+    const POOL = 3;
+    let idx = 0;
+    const worker = async (): Promise<void> => {
+      while (idx < rows.length) {
+        const i = idx++;
+        const r = rows[i];
+        const key = this.bulkDedupKey(r.Title, r.Date || '');
+        if (seen.has(key)) {
+          skipped.push(r);
+        } else {
+          try {
+            // 1. Upload image BEFORE creating the item to avoid 409 Save Conflict
+            let imageFieldValue = null;
+            if (r.Image && imageByName.has(r.Image.toLowerCase())) {
+              try {
+                const file = imageByName.get(r.Image.toLowerCase())!;
+                const uploaded = await this.uploadImageToSiteAssets(file);
+                imageFieldValue = this.buildImageFieldValue(uploaded.serverRelativeUrl, uploaded.fileName);
+              } catch (imgErr: any) {
+                // Attach a warning if image upload fails, but continue to item creation
+                r.Title = `${r.Title} [image warn: ${imgErr?.message || imgErr}]`;
+              }
+            }
+
+            const payload: any = {
+              Title: r.Title,
+              Category: r.Category || null,
+              Time: r.Time || null,
+              Link: r.Link ? { Url: r.Link, Description: "View Link" } : null,
+              Date: r.Date ? new Date(r.Date + 'T00:00:00Z').toISOString() : null,
+              Description: r.Description || null,
+              Details: r.Details || null,
+            };
+            if (imageFieldValue) {
+              payload.Image = imageFieldValue;
+            }
+            // Clean out nulls so we don't send explicit nulls for empty fields
+            Object.keys(payload).forEach(k => { if (payload[k] === null) delete payload[k]; });
+
+            let addResult: any;
+            let addSuccess = false;
+            let addAttempts = 0;
+            let lastAddErr: any;
+            
+            while (!addSuccess && addAttempts < 8) {
+              addAttempts++;
+              try {
+                addResult = await sp.web.lists.getByTitle('Company Events').items.add(payload);
+                addSuccess = true;
+              } catch (addError: any) {
+                lastAddErr = addError;
+                const errMsg = typeof addError?.message === 'string' ? addError.message : JSON.stringify(addError);
+                const missingPropMatch = errMsg.match(/The property '([^']+)' does not exist/);
+                if (missingPropMatch && payload[missingPropMatch[1]] !== undefined) {
+                  delete payload[missingPropMatch[1]];
+                } else if (errMsg.includes('StartObject') && payload.Link && typeof payload.Link === 'string') {
+                  // Link column is likely a Hyperlink type, not string. Auto-fix it!
+                  payload.Link = { Url: payload.Link, Description: "View Link" };
+                } else {
+                  throw addError;
+                }
+              }
+            }
+            if (!addSuccess) throw lastAddErr;
+
+            seen.add(key);
+            added.push({ ...r, __imageUploaded: !!imageFieldValue } as any);
+          } catch (e: any) {
+            // Surface 403 as a friendly permission message
+            const msg = (e?.message || String(e)).includes('403')
+              ? 'You need at least Contribute permission on the Company Events list.'
+              : (e?.message || String(e));
+            failed.push({ row: r, error: msg });
+          }
+        }
+        this.setState(s => ({
+          bulkImportProgress: { done: s.bulkImportProgress.done + 1, total: s.bulkImportProgress.total },
+        }));
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(POOL, rows.length) }, () => worker()));
+
+    this.setState({ bulkImportRunning: false, bulkImportResults: { added, skipped, failed } });
+    if (added.length) await this.getCompanyEvents();
   };
 }

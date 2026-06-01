@@ -22,6 +22,7 @@
     "@pnp/graph": "^4.19.0",
     "@pnp/sp": "^4.19.0",
     "@pnp/spfx-property-controls": "^3.23.0",
+    "exceljs": "^4.4.0",
     "jquery": "^3.7.1",
     "moment": "^2.30.1",
     "moment-timezone": "^0.5.48",
@@ -29,7 +30,8 @@
     "react-accessible-accordion": "^5.0.1",
     "react-big-calendar": "^1.19.4",
     "react-dom": "17.0.1",
-    "react-router-dom": "^6.30.3"
+    "react-router-dom": "^6.30.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@microsoft/rush-stack-compiler-4.7": "0.1.0",
@@ -38,8 +40,13 @@
     "@types/react": "17.0.45",
     "@types/react-dom": "17.0.17",
     "@types/webpack-env": "1.15.3",
-    "ajv": "~5.2.2",
+    "eslint": "^8.57.1",
     "gulp": "~4.0.2",
     "spfx-fast-serve-helpers": "~1.21.1"
+  },
+  "overrides": {
+    "ajv-draft-04": {
+      "ajv": "^8.17.1"
+    }
   }
 }
