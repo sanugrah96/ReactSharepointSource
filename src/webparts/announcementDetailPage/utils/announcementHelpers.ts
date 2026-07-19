@@ -26,6 +26,7 @@ export interface IAnnouncement {
  * @returns A slugified version of the title
  */
 export const generateSlug = (title: string): string => {
+  if (!title) return '';
   return title
     .toLowerCase()
     .trim()

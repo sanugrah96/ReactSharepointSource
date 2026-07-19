@@ -2,24 +2,24 @@ import * as React from "react";
 import styles from "./Home.module.scss";
 import { IHomeProps } from "./IHomeProps";
 import { escape } from "@microsoft/sp-lodash-subset";
-import {
-  IIconProps,
-  Label,
-  Pivot,
-  PivotItem,
-  SearchBox,
-} from "@fluentui/react";
+// Path imports (not the @fluentui/react root barrel) so webpack tree-shakes
+// unused Fluent controls out of the bundle — same pattern as Pagination.tsx.
+import { IIconProps } from "@fluentui/react/lib/Icon";
+import { Pivot, PivotItem } from "@fluentui/react/lib/Pivot";
+import { SearchBox } from "@fluentui/react/lib/SearchBox";
 import * as moment from "moment";
-import * as Moment from "moment-timezone";
 import {
   MSGraphClient,
   SPHttpClient,
   SPHttpClientResponse,
 } from "@microsoft/sp-http";
 import { Calendar as MyCalendar, momentLocalizer } from "react-big-calendar";
-import * as $ from "jquery";
 import { sp } from "../../../services/pnpClient";
-import * as XLSX from "xlsx";
+import { PermissionKind } from "@pnp/sp/security";
+// xlsx (~1 MB min) is only needed for the admin-only bulk upload, so it is
+// loaded on demand in handleBulkFile — same lazy pattern as exceljs below.
+// Only the types are imported statically (erased at compile time).
+import type * as XLSXNS from "xlsx";
 import {
   Accordion,
   AccordionItem,
@@ -30,12 +30,18 @@ import {
 import "react-accessible-accordion/dist/fancy-example.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Pagination } from "./Pagination";
+import ChunkErrorBoundary from "./ChunkErrorBoundary";
+// The SOP Library page is its own route (#/sop-library) — lazy-load it so its
+// code stays out of the home page's initial bundle.
+const SopLibrary = React.lazy(() => import("../../sopLibrary/components/SopLibrary"));
 import {
   generateSlug,
   IAnnouncement,
 } from "../../announcementDetailPage/utils/announcementHelpers";
 require("../assets/style.css");
-require("../assets/fabric.min.css");
+// fabric.min.css (260 KB) is no longer inlined into this bundle — it's loaded
+// once via SPComponentLoader.loadCss in HomeWebPart.onInit (Fabric Core 9.6.1
+// from the Microsoft CDN, verified rule-identical to the old local copy).
 const filterIcon: IIconProps = { iconName: "search" };
 
 const viewCount = 6;
@@ -157,6 +163,7 @@ export interface IHomeState {
   allCalendarEvents: any[];
   quickLinksOpen: boolean;
   // Bulk import state
+  isSiteAdmin: boolean;
   bulkImportOpen: boolean;
   bulkImportFileName: string;
   bulkImportImageFiles: File[];
@@ -177,6 +184,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   // Hero video slide transition: two <video> slots, refs to drive .play() programmatically
   private slotARef = React.createRef<HTMLVideoElement>();
   private slotBRef = React.createRef<HTMLVideoElement>();
+  private bulkFileInputRef = React.createRef<HTMLInputElement>();
   private heroSlideTimeoutId: number | null = null;
   private readonly SLIDE_SETTLE_MS = 1050; // ~50ms past the 1s CSS transition
 
@@ -244,6 +252,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       allCalendarEvents: [],
       quickLinksOpen: false,
       // Bulk import state
+      isSiteAdmin: false,
       bulkImportOpen: false,
       bulkImportFileName: '',
       bulkImportImageFiles: [],
@@ -270,7 +279,80 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       return "Good Evening";
     }
   }
+  // Shared page header (date + greeting + logo), reused by the dashboard and the
+  // SOP Library page so they look identical.
+  private renderTopBar(): JSX.Element {
+    return (
+      <header className='top-bar'>
+        <div className='left'>
+          <div className='date'>
+            {moment(new Date()).format("dddd MMMM DD, YYYY")}
+          </div>
+          <h1 className='greeting'>
+            {this.getGreeting()}, {(this.props.userDisplayName || "").split(" ")[0] || "User"}
+          </h1>
+        </div>
+        <div className='right'>
+          <img src={require("../assets/logo.png")} className='logo' />
+        </div>
+      </header>
+    );
+  }
+
+  // Independent full-page SOP Library view (route #/sop-library) — reuses the
+  // same top-bar header + pivot tab navigation as the other pages.
+  private renderSopLibraryPage(): JSX.Element {
+    const tabStyle: React.CSSProperties = {
+      textDecoration: "none",
+      fontWeight: "unset",
+      textTransform: "uppercase",
+      color: "#ffffff",
+      fontSize: "20px",
+      cursor: "pointer",
+      background: "transparent",
+      padding: "0px 8px",
+    };
+    return (
+      <section className='homecontainer sop-page'>
+        {this.renderTopBar()}
+        <Pivot aria-label='Banner Pivot' selectedKey={"SOPLIBRARY"}>
+          <PivotItem itemKey='THESOURCE' onRenderItemLink={() => (
+            <div onClick={() => this.navigate("/")} style={tabStyle}>THE SOURCE</div>
+          )} />
+          <PivotItem itemKey='ANNOUNCEMENTS' onRenderItemLink={() => (
+            <div onClick={() => this.navigate("/announcements")} style={tabStyle}>ANNOUNCEMENTS</div>
+          )} />
+          <PivotItem itemKey='COMPANYEVENTS' onRenderItemLink={() => (
+            <div onClick={() => this.navigate("/events")} style={tabStyle}>EVENTS</div>
+          )} />
+          <PivotItem itemKey='VIDEOS' onRenderItemLink={() => (
+            <div onClick={() => this.navigate("/videos")} style={tabStyle}>VIDEOS</div>
+          )} />
+        </Pivot>
+        <div className='sop-page-body'>
+          <ChunkErrorBoundary>
+            <React.Suspense fallback={<div />}>
+              <SopLibrary
+                libraryTitle={this.props.sopLibraryName || 'SOP'}
+                versionColumn=''
+                revDateColumn=''
+                phaseColumn=''
+                siteUrl={this.props.siteUrl || ''}
+              />
+            </React.Suspense>
+          </ChunkErrorBoundary>
+        </div>
+      </section>
+    );
+  }
+
   public render(): JSX.Element {
+    // Dedicated full-page route: the SOP Library renders as its own independent
+    // page (#/sop-library), not inside the dashboard.
+    if (this.state.currentRoute === "/sop-library") {
+      return this.renderSopLibraryPage();
+    }
+
     const {
       description,
       isDarkTheme,
@@ -314,22 +396,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
     return (
       <>
       <section className={`homecontainer${isDetailPage ? " detail-page" : ""}`}>
-        {!isDetailPage && (
-          <header className='top-bar'>
-            <div className='left'>
-              <div className='date'>
-                {moment(new Date()).format("dddd MMMM DD, YYYY")}
-              </div>
-              <h1 className='greeting'>
-                {this.getGreeting()}, {this.props.userDisplayName.split(" ")[0]}
-              </h1>
-            </div>
-
-            <div className='right'>
-              <img src={require("../assets/logo.png")} className='logo' />
-            </div>
-          </header>
-        )}
+        {!isDetailPage && this.renderTopBar()}
 
         <Pivot
           aria-label='Banner Pivot'
@@ -362,6 +429,9 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
             )}
           >
             <div className='hero-video-wrapper'>
+              {/* Only the ACTIVE slot preloads the full video; the standby slot
+                  fetches metadata only, so first paint downloads one video, not
+                  two. The standby slot buffers when it becomes active. */}
               <video
                 ref={this.slotARef}
                 src={slotAEffectiveUrl}
@@ -371,9 +441,9 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                 playsInline
                 muted
                 autoPlay={this.state.activeSlot === 'A'}
-                preload='auto'
+                preload={this.state.activeSlot === 'A' ? 'auto' : 'metadata'}
                 onEnded={this.handleHeroVideoEnded}
-                onPlay={this.hidePlayOverlay}
+                onPlay={this.handleHeroPlay}
               />
               <video
                 ref={this.slotBRef}
@@ -384,10 +454,18 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                 playsInline
                 muted
                 autoPlay={false}
-                preload='auto'
+                preload={this.state.activeSlot === 'B' ? 'auto' : 'metadata'}
                 onEnded={this.handleHeroVideoEnded}
-                onPlay={this.hidePlayOverlay}
+                onPlay={this.handleHeroPlay}
               />
+              <div className='hero-loading-overlay'>
+                <img
+                  src={require("../assets/loaderlogo.png")}
+                  alt=''
+                  className='hero-loading-logo'
+                />
+                <div className='hero-loading-spinner'></div>
+              </div>
               <div
                 className='play-button-overlay'
                 onClick={this.handlePlayOverlayClick}
@@ -448,11 +526,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                           <AccordionItemHeading>
                             <AccordionItemButton>
                               <h4 className='menu-section-title'>
-                                <img
-                                  className='menu-section-title-imgwhite'
-                                  src={require("../assets/directorywhite.png")}
-                                  alt={categoryName}
-                                />
+                                {this.categoryIcon(categoryName)}
                                 {categoryName}
                               </h4>
                             </AccordionItemButton>
@@ -493,10 +567,11 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                               (item: NavNode) => (
                                                 <a
                                                   key={item.id}
-                                                  href={item.url}
-                                                  target='_blank'
+                                                  href={this.isSopLibraryLink(item.title) ? '#sop-library' : item.url}
+                                                  target={this.isSopLibraryLink(item.title) ? '_self' : '_blank'}
                                                   rel='noreferrer'
                                                   data-interception='off'
+                                                  onClick={this.isSopLibraryLink(item.title) ? this.openSopLibrary : undefined}
                                                 >
                                                   <span>
                                                     <img
@@ -518,10 +593,11 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                   ) : (
                                     /* ✅ DIRECT LINK (Directory, Timesheet) */
                                     <a
-                                      href={subNode.url}
-                                      target='_blank'
+                                      href={this.isSopLibraryLink(subNode.title) ? '#sop-library' : subNode.url}
+                                      target={this.isSopLibraryLink(subNode.title) ? '_self' : '_blank'}
                                       rel='noreferrer'
                                       data-interception='off'
+                                      onClick={this.isSopLibraryLink(subNode.title) ? this.openSopLibrary : undefined}
                                     >
                                       <span>
                                         {/* ✅ DYNAMIC ICON */}
@@ -587,17 +663,19 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                     </a>
                   </div>
 
-                  <div className='card-row '>
+                  <div className='card-row events-row announcements-row'>
                     {this.state.announcementData.length > 0 &&
                       this.state.announcementData
                         .slice(0, 3)
                         .map((ele, ind) => {
-                          let imageURL =
-                            ele.AttachmentFiles.length > 0
-                              ? ele.AttachmentFiles[0].ServerRelativeUrl
-                              : ele.Image
-                                ? JSON.parse(ele.Image).serverRelativeUrl
-                                : require(`../assets/Announcement.jpg`);
+                          let imageURL = require(`../assets/Announcement.jpg`);
+                          try {
+                            if (ele.AttachmentFiles && ele.AttachmentFiles.length > 0) {
+                              imageURL = ele.AttachmentFiles[0].ServerRelativeUrl;
+                            } else if (ele.Image) {
+                              imageURL = JSON.parse(ele.Image).serverRelativeUrl || imageURL;
+                            }
+                          } catch (e) { /* use default image */ }
                           // Generate slug from title and append ID for uniqueness
                           const slug =
                             ele.Slug || `${generateSlug(ele.Title)}-${ele.ID}`;
@@ -641,11 +719,14 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                               }}
                               style={{ textDecoration: "none", color: "white" }}
                             >
-                              <div className='tag'>{ele.Category}</div>
                               <img src={imageURL} alt='' />
-                              <h3>{ele.Title}</h3>
-                              <p>{ele.Description}</p>
-                              <span className='time'>{ele.Time}</span>
+                              <div className='event-card-info'>
+                                <div className='tag' title={ele.Category}>{ele.Category}</div>
+                                <h3>{ele.Title}</h3>
+                                <p>{ele.Description}</p>
+                                <span className='see-more'>See more →</span>
+                                <span className='time'>{ele.Time}</span>
+                              </div>
                             </a>
                           );
                         })}
@@ -673,15 +754,17 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                         <div style={{ width: "36px", height: "36px", border: "4px solid #333", borderTopColor: "#ff6b35", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
                       </div>
                     ) : this.state.companyevents.length > 0 &&
-                      this.state.companyevents.map((el, ind) => {
-                        const imageURL =
-                          el.AttachmentFiles && el.AttachmentFiles.length > 0
-                            ? el.AttachmentFiles[0].ServerRelativeUrl
-                            : el.Image
-                              ? JSON.parse(el.Image).serverRelativeUrl
-                              : (el.Link && el.Link.Url && el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i))
-                                ? el.Link.Url
-                                : require(`../assets/Event.jpg`);
+                      this.state.companyevents.slice(0, 3).map((el, ind) => {
+                        let imageURL = require(`../assets/Event.jpg`);
+                        try {
+                          if (el.AttachmentFiles && el.AttachmentFiles.length > 0) {
+                            imageURL = el.AttachmentFiles[0].ServerRelativeUrl;
+                          } else if (el.Image) {
+                            imageURL = JSON.parse(el.Image).serverRelativeUrl || imageURL;
+                          } else if (el.Link && el.Link.Url && el.Link.Url.match(/\.(jpeg|jpg|gif|png|svg|webp|avif)/i)) {
+                            imageURL = el.Link.Url;
+                          }
+                        } catch (e) { /* use default image */ }
                         let badgeClass = "tag event-meeting";
                         const category = el.Category
                           ? el.Category.toLowerCase()
@@ -780,12 +863,14 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                       {this.state.aboutUS.length > 0 &&
                         this.state.aboutUS.map((ele, ind) => {
                           const cardClass = "info-card orange-card";
-                          let imageURL =
-                            ele.AttachmentFiles.length > 0
-                              ? ele.AttachmentFiles[0].ServerRelativeUrl
-                              : ele.Image
-                                ? JSON.parse(ele.Image).serverRelativeUrl
-                                : require(`../assets/Event.jpg`);
+                          let imageURL = require(`../assets/Event.jpg`);
+                          try {
+                            if (ele.AttachmentFiles && ele.AttachmentFiles.length > 0) {
+                              imageURL = ele.AttachmentFiles[0].ServerRelativeUrl;
+                            } else if (ele.Image) {
+                              imageURL = JSON.parse(ele.Image).serverRelativeUrl || imageURL;
+                            }
+                          } catch (e) { /* use default image */ }
 
                           return (
                             <a
@@ -823,16 +908,16 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                         return (
                           <div className='event'>
                             <div className='date-box'>
-                              <div>{moment(ele.Date).format("ddd")}</div>
+                              <div>{ele.Date ? moment(ele.Date).format("ddd") : "---"}</div>
                               <div className='day'>
-                                {moment(ele.Date).format("DD")}
+                                {ele.Date ? moment(ele.Date).format("DD") : "--"}
                               </div>
-                              <div>{moment(ele.Date).format("MMM")}</div>
+                              <div>{ele.Date ? moment(ele.Date).format("MMM") : "---"}</div>
                             </div>
                             <div className='event-info'>
                               <h4>{ele.Title}</h4>
                               <p>
-                                {moment(ele.Date).format("dddd MMMM DD, YYYY")}
+                                {ele.Date ? moment(ele.Date).format("dddd MMMM DD, YYYY") : "Date not available"}
                               </p>
                               <a
                                 href='#'
@@ -1102,18 +1187,18 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                         >
                           {" "}
                           <span>
-                            {new Date(
+                            {this.state.announcementDetail.date ? new Date(
                               this.state.announcementDetail.date,
                             ).toLocaleDateString("en-US", {
                               year: "numeric",
                               month: "long",
                               day: "numeric",
-                            })}
+                            }) : ""}
                           </span>{" "}
                           <span style={{ color: "rgba(255,255,255,0.4)" }}>
                             •
                           </span>
-                          <span>{this.state.announcementDetail.time}</span>
+                          <span>{this.state.announcementDetail.time || ""}</span>
                           {/* <span style={{ color: "rgba(255,255,255,0.4)" }}>
                             •
                           </span>
@@ -1152,7 +1237,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                               padding: "0 1rem 4rem",
                             }}
                           >
-                            {this.state.announcementDetail.content.sections.map(
+                            {this.state.announcementDetail.content && Array.isArray(this.state.announcementDetail.content.sections) &&
+                              this.state.announcementDetail.content.sections.map(
                               (section, index) => {
                                 if (section.type === "text") {
                                   return (
@@ -1252,9 +1338,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                   >
                     <div
                       style={{
-                        background:
-                          "linear-gradient(90deg, rgb(0 0 0 / 65%), rgb(0 0 0 / 65%))",
-                        height: "300px",
+                       height: "300px",
                       }}
                     >
                       <div className='container Home-banner-wrapper'>
@@ -1324,12 +1408,14 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                         <div className='announcements-grid'>
                           {this.state.announcementDataall.length > 0 &&
                             this.state.announcementDataall.map((ele, ind) => {
-                              let imageURL =
-                                ele.AttachmentFiles.length > 0
-                                  ? ele.AttachmentFiles[0].ServerRelativeUrl
-                                  : ele.Image
-                                    ? JSON.parse(ele.Image).serverRelativeUrl
-                                    : require(`../assets/Announcement.jpg`);
+                              let imageURL = require(`../assets/Announcement.jpg`);
+                              try {
+                                if (ele.AttachmentFiles && ele.AttachmentFiles.length > 0) {
+                                  imageURL = ele.AttachmentFiles[0].ServerRelativeUrl;
+                                } else if (ele.Image) {
+                                  imageURL = JSON.parse(ele.Image).serverRelativeUrl || imageURL;
+                                }
+                              } catch (e) { /* use default image */ }
                               const slug =
                                 ele.Slug ||
                                 `${generateSlug(ele.Title)}-${ele.ID}`;
@@ -1736,7 +1822,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                             padding: "0 1rem 4rem",
                           }}
                         >
-                          {this.state.eventDetail.content.map(
+                          {this.state.eventDetail.content && Array.isArray(this.state.eventDetail.content) &&
+                            this.state.eventDetail.content.map(
                             (section: any, index: number) => (
                               <div
                                 key={index}
@@ -1791,9 +1878,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                   >
                     <div
                       style={{
-                        background:
-                          "linear-gradient(90deg, rgb(0 0 0 / 65%), rgb(0 0 0 / 65%))",
-                        height: "300px",
+              height: "300px",
                       }}
                     >
                       <div className='container Home-banner-wrapper'>
@@ -1815,8 +1900,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                     </div>
                   </div>
                 </div>
-                <div>
-                  <div className='ms-Grid-col ms-sm12 ms-md8'>
+                <div className='events-two-col' style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 16 }}>
+                  <div className='ms-Grid-col ms-sm12 ms-md8' style={{ flex: '3 1 520px', minWidth: 0 }}>
                     {this.state.bigBirthdayShow ? (
                       <>
                         <section className='celebration-card'>
@@ -1888,6 +1973,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                 onClick={() => this.handleViewChange("day")}
                                 style={{
                                   padding: "8px 16px",
+                                  background: "#ff7a18 !important",
+                                  color: "black",
                                   opacity:
                                     this.state.calendarView === "day" ? 1 : 0.6,
                                 }}
@@ -1899,6 +1986,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                 onClick={() => this.handleViewChange("week")}
                                 style={{
                                   padding: "8px 16px",
+                                  background: "#ff7a18 !important",
+                                     color: "black",
                                   opacity:
                                     this.state.calendarView === "week"
                                       ? 1
@@ -1912,6 +2001,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                 onClick={() => this.handleViewChange("month")}
                                 style={{
                                   padding: "8px 16px",
+                                     color: "black",
                                   opacity:
                                     this.state.calendarView === "month"
                                       ? 1
@@ -1925,6 +2015,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                 onClick={() => this.handleViewChange("agenda")}
                                 style={{
                                   padding: "8px 16px",
+                                     color: "black",
                                   opacity:
                                     this.state.calendarView === "agenda"
                                       ? 1
@@ -2119,7 +2210,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                   />
                 </div>
               </div> */}
-                  <div className='ms-Grid-col ms-sm12 ms-md4'>
+                  <div className='ms-Grid-col ms-sm12 ms-md4' style={{ flex: '1 1 300px', minWidth: 0 }}>
                     {this.state.vivaEngageShow ? (
                       <>
                         <div title='Documents' className='document'>
@@ -2151,17 +2242,19 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                               <span className='accent'></span>
                               <h3 style={{ margin: 0 }}>Events</h3>
                             </div>
-                            <button
-                              type='button'
-                              onClick={() => this.setState({ bulkImportOpen: true })}
-                              style={{
-                                fontSize: 12, padding: '4px 10px', border: '1px solid #ff7a00',
-                                background: 'transparent', color: '#ff7a00', borderRadius: 4, cursor: 'pointer'
-                              }}
-                              title='Bulk upload events from Excel + images'
-                            >
-                              Bulk Upload
-                            </button>
+                            {this.state.isSiteAdmin && (
+                              <button
+                                type='button'
+                                onClick={() => this.setState({ bulkImportOpen: true })}
+                                style={{
+                                  fontSize: 12, padding: '4px 10px', border: '1px solid #ff7a00',
+                                  background: 'transparent', color: '#ff7a00', borderRadius: 4, cursor: 'pointer'
+                                }}
+                                title='Bulk upload events from Excel + images'
+                              >
+                                Bulk Upload
+                              </button>
+                            )}
                           </div>
                           {this.getEventsForCurrentMonth().length > 0 ? (
                             this.getEventsForCurrentMonth().map((eve, ind) => {
@@ -2272,6 +2365,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                           <div style={{ textAlign: "center" }}>
                             <button
                               className='see-more'
+                              style={{
+                                  padding: "8px 16px !important",
+                                     color: "black !important",
+                                }}  
                               onClick={() => {
                                 this.setState({
                                   bigBirthdayShow: true,
@@ -2555,6 +2652,9 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                           controls
                           width='100%'
                           style={{ borderRadius: "10px" }}
+                          onLoadedMetadata={(e) => {
+                            e.currentTarget.currentTime = 0;
+                          }}
                         >
                           <source
                             src={`${this.props.siteUrl}/${this.state.videoDetail.fileRef}`}
@@ -2691,9 +2791,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                   >
                     <div
                       style={{
-                        background:
-                          "linear-gradient(90deg, rgb(0 0 0 / 65%), rgb(0 0 0 / 65%))",
-                        height: "300px",
+                       height: "300px",
                       }}
                     >
                       <div className='container Home-banner-wrapper'>
@@ -2767,31 +2865,33 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                         <div className='announcements-grid'>
                           {this.state.videosDetails.length > 0 &&
                             this.state.videosDetails.map((video, ind) => {
+                              if (!video) return null;
+                              const fileLeafRef = video.FileLeafRef || "";
                               const videoSlug = generateSlug(
-                                video.FileLeafRef.replace(/\.[^/.]+$/, ""),
+                                fileLeafRef.replace(/\.[^/.]+$/, ""),
                               );
                               return (
                                 <a
                                   href={`#/videos/${videoSlug}`}
                                   className='card'
-                                  key={video.FileLeafRef}
+                                  key={fileLeafRef || ind}
                                   onClick={(e) => {
                                     e.preventDefault();
                                     // Save video data to localStorage for persistence on refresh
                                     try {
                                       const videoData = {
-                                        id: video.ID || video.FileLeafRef,
+                                        id: video.ID || fileLeafRef,
                                         slug: videoSlug,
-                                        title: video.FileLeafRef.replace(
+                                        title: fileLeafRef.replace(
                                           /\.[^/.]+$/,
                                           "",
                                         ),
                                         description:
                                           video.VideoDescription || "",
                                         time: video.Time || "",
-                                        fileRef: video.FileRef,
-                                        fileName: video.FileLeafRef,
-                                        modified: video.Modified,
+                                        fileRef: video.FileRef || "",
+                                        fileName: fileLeafRef,
+                                        modified: video.Modified || "",
                                       };
                                       localStorage.setItem(
                                         "videoDetail_" + videoSlug,
@@ -2804,31 +2904,150 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                                     textDecoration: "none",
                                     color: "white",
                                   }}
+                                  onMouseEnter={(e) => {
+                                    const card = e.currentTarget;
+                                    const videoEl = card.querySelector('video');
+                                    if (!videoEl || !videoEl.paused) return;
+                                    // Hide poster overlay, play button overlay, and duration badge on hover to show the native video frame
+                                    const overlay = card.querySelector('.video-poster-overlay') as HTMLElement;
+                                    if (overlay) overlay.style.display = 'none';
+                                    const playBtn = card.querySelector('.video-play-button-overlay') as HTMLElement;
+                                    if (playBtn) playBtn.style.display = 'none';
+                                    const durationBadge = card.querySelector('.video-duration-badge') as HTMLElement;
+                                    if (durationBadge) durationBadge.style.display = 'none';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    const card = e.currentTarget;
+                                    const videoEl = card.querySelector('video');
+                                    if (!videoEl || !videoEl.paused) return;
+                                    // Restore poster overlay, play button overlay, and duration badge when not hovering
+                                    const overlay = card.querySelector('.video-poster-overlay') as HTMLElement;
+                                    if (overlay) overlay.style.display = 'block';
+                                    const playBtn = card.querySelector('.video-play-button-overlay') as HTMLElement;
+                                    if (playBtn) playBtn.style.display = 'flex';
+                                    const durationBadge = card.querySelector('.video-duration-badge') as HTMLElement;
+                                    if (durationBadge) durationBadge.style.display = 'block';
+                                  }}
                                 >
-                                  <video
-                                    controls
-                                    width='100%'
-                                    muted
-                                    preload="metadata"
-                                    playsInline
-                                    onLoadedMetadata={(e) => {
-                                      const v = e.currentTarget;
-                                      if (v.currentTime === 0) {
-                                        try { v.currentTime = 0.1; } catch {}
-                                      }
-                                    }}
-                                  >
-                                    <source
-                                      src={`${this.props.siteUrl}/${video.FileRef}`}
-                                      type='video/mp4'
+                                  <div style={{ position: 'relative' }}>
+                                    <video
+                                      controls
+                                      width='100%'
+                                      muted
+                                      preload="metadata"
+                                      playsInline
+                                      onLoadedMetadata={(e) => {
+                                        const v = e.currentTarget;
+                                        v.currentTime = 0;
+                                        this.setVideoThumbnailToMidpoint(v);
+
+                                        // Calculate actual video duration dynamically in MM:SS
+                                        const duration = v.duration;
+                                        if (duration && duration > 0 && !isNaN(duration) && isFinite(duration)) {
+                                          const minutes = Math.floor(duration / 60);
+                                          const seconds = Math.floor(duration % 60);
+                                          const durationText = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                                          
+                                          const parent = v.parentElement;
+                                          if (parent) {
+                                            const badge = parent.querySelector('.video-duration-badge') as HTMLElement;
+                                            if (badge) {
+                                              badge.innerText = durationText;
+                                              badge.style.display = 'block';
+                                            }
+                                          }
+                                        }
+                                      }}
+                                      onPlay={(e) => {
+                                        const v = e.currentTarget;
+                                        // Hide poster overlay, play button overlay, and duration badge
+                                        const overlay = v.parentElement?.querySelector('.video-poster-overlay') as HTMLElement;
+                                        if (overlay) overlay.style.display = 'none';
+                                        const playBtn = v.parentElement?.querySelector('.video-play-button-overlay') as HTMLElement;
+                                        if (playBtn) playBtn.style.display = 'none';
+                                        const durationBadge = v.parentElement?.querySelector('.video-duration-badge') as HTMLElement;
+                                        if (durationBadge) durationBadge.style.display = 'none';
+                                      }}
+                                      onPause={(e) => {
+                                        const v = e.currentTarget;
+                                        // Show poster overlay, play button overlay, and duration badge when paused
+                                        const overlay = v.parentElement?.querySelector('.video-poster-overlay') as HTMLElement;
+                                        if (overlay) overlay.style.display = 'block';
+                                        const playBtn = v.parentElement?.querySelector('.video-play-button-overlay') as HTMLElement;
+                                        if (playBtn) playBtn.style.display = 'flex';
+                                        const durationBadge = v.parentElement?.querySelector('.video-duration-badge') as HTMLElement;
+                                        if (durationBadge) durationBadge.style.display = 'block';
+                                      }}
+                                    >
+                                      <source
+                                        src={`${this.props.siteUrl}/${video.FileRef || ""}`}
+                                        type='video/mp4'
+                                      />
+                                      Your browser does not support HTML5 video.
+                                    </video>
+                                    {/* Center Play Button Overlay */}
+                                    <div
+                                      className="video-play-button-overlay"
+                                      style={{
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        transform: 'translate(-50%, -50%)',
+                                        width: '56px',
+                                        height: '56px',
+                                        borderRadius: '50%',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        border: '2.5px solid #ffffff',
+                                        cursor: 'pointer',
+                                        pointerEvents: 'none',
+                                        zIndex: 2,
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                                        transition: 'all 0.2s ease',
+                                      }}
+                                    >
+                                      <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        style={{ marginLeft: '3px' }}
+                                      >
+                                        <path
+                                          d="M8 5V19L19 12L8 5Z"
+                                          fill="white"
+                                        />
+                                      </svg>
+                                    </div>
+                                    {/* Bottom Right Duration Badge (Loaded Dynamically) */}
+                                    <div
+                                      className="video-duration-badge"
+                                      style={{
+                                        position: 'absolute',
+                                        bottom: '8px',
+                                        right: '8px',
+                                        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                        color: '#ffffff',
+                                        padding: '3px 6px',
+                                        borderRadius: '4px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        fontFamily: '"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif',
+                                        letterSpacing: '2px',
+                                        pointerEvents: 'none',
+                                        zIndex: 2,
+                                        display: 'none', // Hidden by default until metadata calculates duration
+                                      }}
                                     />
-                                    Your browser does not support HTML5 video.
-                                  </video>
+                                  </div>
                                   <h3 className='videoscardheader'>
-                                    {video.FileLeafRef}
+                                    {fileLeafRef}
                                   </h3>
-                                  <p>{video.VideoDescription}</p>
-                                  <span className='time'>{video.Time}</span>
+                                  <p>{video.VideoDescription || ""}</p>
+                                  <span className='time'>{video.Time || ""}</span>
                                 </a>
                               );
                             })}
@@ -2977,17 +3196,19 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
               <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                   <h2 style={{ margin: 0 }}>Company Events</h2>
-                  <button
-                    type='button'
-                    onClick={() => this.setState({ bulkImportOpen: true })}
-                    style={{
-                      fontSize: 12, padding: '4px 10px', border: '1px solid #ff7a00',
-                      background: 'transparent', color: '#ff7a00', borderRadius: 4, cursor: 'pointer'
-                    }}
-                    title='Bulk upload events from Excel + images'
-                  >
-                    Bulk Upload
-                  </button>
+                  {this.state.isSiteAdmin && (
+                    <button
+                      type='button'
+                      onClick={() => this.setState({ bulkImportOpen: true })}
+                      style={{
+                        fontSize: 12, padding: '4px 10px', border: '1px solid #ff7a00',
+                        background: 'transparent', color: '#ff7a00', borderRadius: 4, cursor: 'pointer'
+                      }}
+                      title='Bulk upload events from Excel + images'
+                    >
+                      Bulk Upload
+                    </button>
+                  )}
                 </div>
                 <a
                   href="#"
@@ -3149,7 +3370,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       </section>
 
       {/* ===== Bulk Import Modal ===== */}
-      {this.state.bulkImportOpen && (() => {
+      {this.state.isSiteAdmin && this.state.bulkImportOpen && (() => {
         const { bulkImportRows, bulkImportFileName, bulkImportImageFiles, bulkImportParseError,
                 bulkImportRunning, bulkImportProgress, bulkImportResults } = this.state;
 
@@ -3164,66 +3385,100 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
           <>
             {/* Backdrop */}
             <div
+              className='bulk-backdrop'
               onClick={() => !bulkImportRunning && this.setState({ bulkImportOpen: false })}
-              style={{
-                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9998,
-              }}
             />
             {/* Modal */}
-            <div style={{
-              position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-              background: '#212121', color: '#fff', borderRadius: 10, zIndex: 9999,
-              width: 'min(90vw, 680px)', maxHeight: '90vh', overflowY: 'auto',
-              padding: '24px 28px', boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
-              fontFamily: 'inherit',
-            }}>
+            <div className='bulk-overlay'>
+            <div
+              className='bulk-modal'
+              role='dialog'
+              aria-modal='true'
+              aria-labelledby='bulk-modal-title'
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && !bulkImportRunning) {
+                  this.setState({ bulkImportOpen: false, bulkImportResults: null, bulkImportParseError: null });
+                }
+              }}
+            >
               {/* Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <h2 style={{ margin: 0, fontSize: 18, color: '#ff7a00' }}>Bulk Upload — Company Events</h2>
+              <div className='bulk-modal__header'>
+                <h2 id='bulk-modal-title' className='bulk-modal__title'>Bulk Upload — Company Events</h2>
                 <button
                   type='button'
+                  className='bulk-modal__close'
                   disabled={bulkImportRunning}
                   onClick={() => this.setState({ bulkImportOpen: false, bulkImportResults: null, bulkImportParseError: null })}
-                  style={{ background: 'none', border: 'none', color: '#aaa', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}
                   aria-label='Close bulk upload modal'
                 >×</button>
               </div>
 
-              {/* Spreadsheet file picker */}
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, color: '#ccc' }}>
-                  1. Pick spreadsheet file (.xlsx / .xls / .csv)
-                </label>
-                <input
-                  id='bulk-xlsx-input'
-                  type='file'
-                  accept='.xlsx,.xls,.csv'
-                  disabled={bulkImportRunning}
-                  onChange={e => e.target.files?.[0] && this.handleBulkFile(e.target.files[0])}
-                  style={{ color: '#fff' }}
-                />
-                {bulkImportFileName && !bulkImportParseError && (
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#8f8' }}>
-                    ✓ {bulkImportFileName} — {bulkImportRows.length} row{bulkImportRows.length !== 1 ? 's' : ''} with Title
-                    {rowsWithImage.length > 0 && (
-                      <>, {rowsWithImage.length} with Image filenames
-                        {matchedImages > 0 && <span style={{ color: '#8f8' }}> ({matchedImages} matched)</span>}
-                        {missingImages > 0 && <span style={{ color: '#fa0' }}> ({missingImages} missing from picker)</span>}
-                      </>
-                    )}
-                  </div>
-                )}
-                {bulkImportParseError && (
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#f88' }}>⚠ {bulkImportParseError}</div>
-                )}
+              {/* Step 1 — file dropzone */}
+              <div className='bulk-step-label'>1. Upload spreadsheet</div>
+              <input
+                id='bulk-xlsx-input'
+                ref={this.bulkFileInputRef}
+                type='file'
+                accept='.xlsx,.xls,.csv'
+                hidden
+                disabled={bulkImportRunning}
+                onChange={e => e.target.files?.[0] && this.handleBulkFile(e.target.files[0])}
+              />
+              <div
+                className='bulk-dropzone'
+                role='button'
+                tabIndex={0}
+                aria-label='Choose or drop a spreadsheet file'
+                onClick={() => !bulkImportRunning && this.bulkFileInputRef.current?.click()}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !bulkImportRunning) {
+                    e.preventDefault();
+                    this.bulkFileInputRef.current?.click();
+                  }
+                }}
+                onDragOver={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement).classList.add('is-dragover'); }}
+                onDragLeave={(e) => { (e.currentTarget as HTMLElement).classList.remove('is-dragover'); }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLElement).classList.remove('is-dragover');
+                  const f = e.dataTransfer.files?.[0];
+                  if (f && !bulkImportRunning) this.handleBulkFile(f);
+                }}
+              >
+                <div className='bulk-dropzone__icon'>⬆</div>
+                <div className='bulk-dropzone__text'>Drag &amp; drop your file here, or <span className='bulk-dropzone__browse'>browse</span></div>
+                <div className='bulk-dropzone__hint'>Accepts .xlsx, .xls or .csv</div>
               </div>
 
-              {/* Image files picker (Hidden as requested) */}
-              {/* Help text */}
-              <div style={{ background: '#2a2a3e', borderRadius: 6, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#bbb', lineHeight: 1.6 }}>
-                <strong style={{ color: '#ff7a00' }}>Column guide:</strong> <strong>Title</strong> (required), Category, Time, Link, Date (Excel Date or YYYY-MM-DD), Details, Description, Image (filename only e.g. <em>hot-yoga.jpg</em>)<br />
-                Dedup key: Title + Date (day). Rows already in the list are skipped.
+              {/* Sample template download */}
+              <button type='button' className='bulk-link' onClick={this.downloadSampleTemplate}>
+                ⬇ Download sample template (.xlsx)
+              </button>
+              <div className='bulk-sample-note' style={{ fontSize: 12, color: '#9aa0a6', marginTop: 4, marginBottom: 8 }}>
+                When you're ready to upload, use only the "Upload Version" tab from the downloaded template. Do not upload the full file with both tabs.
               </div>
+
+              {/* Parsed-file confirmation */}
+              {bulkImportFileName && !bulkImportParseError && (
+                <div className='bulk-filechip'>
+                  <span className='bulk-filechip__check'>✓</span>
+                  <span className='bulk-filechip__name'>{bulkImportFileName}</span>
+                  <span className='bulk-filechip__meta'>
+                    {bulkImportRows.length} row{bulkImportRows.length !== 1 ? 's' : ''} with Title
+                    {rowsWithImage.length > 0 && (
+                      <>, {rowsWithImage.length} with Image
+                        {matchedImages > 0 && <span style={{ color: '#7bd88f' }}> · {matchedImages} matched</span>}
+                        {missingImages > 0 && <span style={{ color: '#ffb454' }}> · {missingImages} missing</span>}
+                      </>
+                    )}
+                  </span>
+                </div>
+              )}
+              {bulkImportParseError && (
+                <div className='bulk-alert bulk-alert--error'>⚠ {bulkImportParseError}</div>
+              )}
+
+
 
               {/* Progress bar */}
               {bulkImportRunning && (
@@ -3304,12 +3559,12 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
               })()}
 
               {/* Actions */}
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
+              <div className='bulk-actions'>
                 <button
                   type='button'
+                  className='bulk-btn bulk-btn--ghost'
                   disabled={bulkImportRunning}
                   onClick={() => this.setState({ bulkImportOpen: false, bulkImportResults: null, bulkImportParseError: null })}
-                  style={{ fontSize: 13, padding: '6px 18px', border: '1px solid #555', background: 'transparent', color: '#ccc', borderRadius: 4, cursor: 'pointer' }}
                 >
                   {bulkImportResults ? 'Done' : 'Cancel'}
                 </button>
@@ -3317,18 +3572,15 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
                   <button
                     type='button'
                     id='bulk-run-import-btn'
+                    className='bulk-btn bulk-btn--primary'
                     disabled={bulkImportRunning || bulkImportRows.length === 0 || !!bulkImportParseError}
                     onClick={() => this.runBulkImport()}
-                    style={{
-                      fontSize: 13, padding: '6px 18px',
-                      background: (bulkImportRunning || bulkImportRows.length === 0 || !!bulkImportParseError) ? '#555' : '#ff7a00',
-                      border: 'none', color: '#fff', borderRadius: 4, cursor: 'pointer', fontWeight: 600,
-                    }}
                   >
                     {bulkImportRunning ? 'Running…' : 'Run Import'}
                   </button>
                 )}
               </div>
+            </div>
             </div>
           </>
         );
@@ -4159,6 +4411,49 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
     return { route, itemId };
   }
 
+  // Outline SVG icon for a Quick-Links category, chosen by keyword from the title
+  // (matches the reference design). Falls back to a grid icon for anything else.
+  private categoryIcon = (name: string): JSX.Element => {
+    const n = (name || "").toLowerCase();
+    const common: any = {
+      className: "menu-section-title-svg",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 2,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      viewBox: "0 0 24 24",
+      "aria-hidden": true,
+    };
+    if (/operation|workflow|process/.test(n)) {
+      return <svg {...common}><polyline points="22,12 18,12 15,21 9,3 6,12 2,12" /></svg>;
+    }
+    if (/employee|people|tool|staff|team|\bhr\b/.test(n)) {
+      return <svg {...common}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>;
+    }
+    if (/update|news|notif|alert|announce/.test(n)) {
+      return <svg {...common}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
+    }
+    if (/safe|safety|compliance/.test(n)) {
+      return <svg {...common}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>;
+    }
+    if (/train|learn|course/.test(n)) {
+      return <svg {...common}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>;
+    }
+    return <svg {...common}><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>;
+  };
+
+  // Quick-link whose title is "SOP Library" routes to the dedicated full-page
+  // SOP Library view (#/sop-library) — an independent page, same tab.
+  private isSopLibraryLink = (title: string): boolean => {
+    return /sop\s*library/i.test(title || "");
+  };
+
+  private openSopLibrary = (e: React.MouseEvent<HTMLAnchorElement>): void => {
+    e.preventDefault();
+    this.navigate("/sop-library");
+  };
+
   private navigate(route: string, itemId: string | null = null): void {
     const url = itemId ? `#${route}/${itemId}` : `#${route}`;
 
@@ -4190,7 +4485,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
     // Map routes to pivot keys
     switch (currentRoute) {
       case "/":
-        this.setState({ activePivotKey: "THESOURCE", calendarShow: false });
+        this.setState({ activePivotKey: "THESOURCE", calendarShow: false }, () => this.playActiveHeroSlot());
         break;
       case "/announcements":
         this.setState({ activePivotKey: "ANNOUNCEMENTS" });
@@ -4228,6 +4523,11 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
           });
         }
         break;
+      case "/sop-library":
+        // Independent page — no video work needed. Keep activePivotKey consistent
+        // with a cold-load deep-link (which maps unknown routes to THESOURCE).
+        this.setState({ activePivotKey: "THESOURCE", calendarShow: false });
+        break;
       case "/videos":
         this.setState({ activePivotKey: "VIDEOS" });
         if (currentItemId) {
@@ -4241,11 +4541,12 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         }
         break;
       default:
-        this.setState({ activePivotKey: "THESOURCE", calendarShow: false });
+        this.setState({ activePivotKey: "THESOURCE", calendarShow: false }, () => this.playActiveHeroSlot());
     }
   }
 
   private async loadAnnouncementDetail(slug: string): Promise<void> {
+    if (!slug) return;
     this.setState({
       announcementDetailLoading: true,
       announcementDetailError: null,
@@ -4254,7 +4555,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
     try {
       // Extract ID from slug (e.g., "my-title-123" -> 123)
-      const idMatch = slug.match(/-(\d+)$/);
+      const idMatch = slug ? slug.match(/-(\d+)$/) : null;
       const id = idMatch ? parseInt(idMatch[1], 10) : null;
       let spItem = null;
 
@@ -4279,7 +4580,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
             .expand("AttachmentFiles")();
 
         } catch (err) {
-          console.warn("Item not found by ID");
         }
       }
 
@@ -4309,7 +4609,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
             spItem = items[0];
           }
         } catch (err) {
-          console.warn("Item not found by title match");
         }
       }
 
@@ -4380,7 +4679,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         }
       }
     } catch (err) {
-      console.error("Error loading announcement:", err);
       // Fallback: try localStorage on error
       let fromStorage = null;
       try {
@@ -4403,6 +4701,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   }
 
   private async loadEventDetail(slug: string): Promise<void> {
+    if (!slug) return;
     this.setState({
       eventDetailLoading: true,
       eventDetailError: null,
@@ -4410,7 +4709,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
     });
 
     try {
-      const idMatch = slug.match(/-(\d+)$/);
+      const idMatch = slug ? slug.match(/-(\d+)$/) : null;
       const id = idMatch ? parseInt(idMatch[1], 10) : null;
       let spItem = null;
 
@@ -4451,18 +4750,14 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
               spItem.Details = detailItem.details || "";
             } catch (e2) {
-              console.warn(
-                "Details/details column not found for event, skipping",
-              );
             }
           }
         } catch (err) {
-          console.warn("Event not found by ID");
         }
       }
 
       if (!spItem) {
-        const titleFromSlug = slug.replace(/-(\d+)$/, "").replace(/-/g, " ");
+        const titleFromSlug = slug ? slug.replace(/-(\d+)$/, "").replace(/-/g, " ") : "";
         try {
           const items = await sp.web.lists
             .getByTitle("Events")
@@ -4502,14 +4797,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
                 spItem.Details = detailItem.details || "";
               } catch (e2) {
-                console.warn(
-                  "Details/details column not found for event, skipping",
-                );
               }
             }
           }
         } catch (err) {
-          console.warn("Event not found by title match");
         }
       }
 
@@ -4548,13 +4839,9 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
               spItem.Details = detailItem.details || "";
             } catch (e2) {
-              console.warn(
-                "Details/details column not found for Company Events, skipping",
-              );
             }
           }
         } catch (err) {
-          console.warn("Event not found in Company Events by ID");
         }
       }
 
@@ -4631,7 +4918,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         }
       }
     } catch (err) {
-      console.error("Error loading event:", err);
       // Fallback: try localStorage on error
       let fromStorage = null;
       try {
@@ -4681,7 +4967,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
             .top(4999)();
 
         } catch (e) {
-          console.warn("Failed to fetch videos directly");
           allVideos = [];
         }
       }
@@ -4689,7 +4974,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       // Try to find video by matching slug
       const titleFromSlug = slug.replace(/-/g, " ").toLowerCase();
       let matchedVideo = allVideos.find((v: any) => {
-        const fileName = v.FileLeafRef.replace(/\.[^/.]+$/, "").toLowerCase();
+        const fileName = (v.FileLeafRef || "").replace(/\.[^/.]+$/, "").toLowerCase();
         return (
           generateSlug(fileName) === slug || fileName.includes(titleFromSlug)
         );
@@ -4699,7 +4984,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         // Try partial match
         const slugParts = titleFromSlug.split(" ");
         matchedVideo = allVideos.find((v: any) => {
-          const fileName = v.FileLeafRef.toLowerCase();
+          const fileName = (v.FileLeafRef || "").toLowerCase();
           return slugParts.every((part: string) => fileName.includes(part));
         });
       }
@@ -4726,23 +5011,21 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
               detailsContent = detailItem.details || "";
             } catch (e2) {
-              console.warn(
-                "Details/details column not found for video, skipping",
-              );
             }
           }
         }
 
+        const fileLeafRef = matchedVideo.FileLeafRef || "";
         const transformed = {
-          id: matchedVideo.ID || matchedVideo.FileLeafRef,
+          id: matchedVideo.ID || fileLeafRef,
           slug: slug,
-          title: matchedVideo.FileLeafRef.replace(/\.[^/.]+$/, ""),
+          title: fileLeafRef.replace(/\.[^/.]+$/, ""),
           description: matchedVideo.VideoDescription || "",
           details: detailsContent,
           time: matchedVideo.Time || "",
-          fileRef: matchedVideo.FileRef,
-          fileName: matchedVideo.FileLeafRef,
-          modified: matchedVideo.Modified,
+          fileRef: matchedVideo.FileRef || "",
+          fileName: fileLeafRef,
+          modified: matchedVideo.Modified || "",
         };
         // Save to localStorage for persistence
         try {
@@ -4776,7 +5059,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         }
       }
     } catch (err) {
-      console.error("Error loading video:", err);
       // Fallback: try localStorage on error
       let fromStorage = null;
       try {
@@ -4816,36 +5098,42 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
       // Listen for browser back/forward button
       window.addEventListener("popstate", this.handlePopState);
+      // Resume the hero video when the browser tab/page regains visibility
+      // (browsers pause non-visible videos and don't auto-resume them).
+      document.addEventListener("visibilitychange", this.handleVisibilityChange);
 
-      // Load all data in parallel without delay
+      // Load all data in parallel — use individual catch wrappers so one failure
+      // doesn't crash the entire page
+      const safeCall = (fn: () => Promise<any>) => fn().catch(err => undefined);
       await Promise.all([
-        this.loadQuickLinks(),
-        this.getAnnouncements(),
-        this.getCompanyEvents(),
-        this.getAboutUsDetails(),
-        this.getBannerNews(),
-        this.getCelebrationData(),
-        this.getCelebrationSubData(),
-        this.getQuizDetails(),
-        this.loadExistingAnswers(),
-        this.getAnnouncementsall(),
-        this.loadVideos(),
-        this.loadHomeVideos(),
-        this.getUpcomingEvents(),
-        this.getBirthdayData(),
-        this.getAllCalendarEvents(),
+        safeCall(() => this.checkSiteAdmin()),
+        safeCall(() => this.loadQuickLinks()),
+        safeCall(() => this.getAnnouncements()),
+        safeCall(() => this.getCompanyEvents()),
+        safeCall(() => this.getAboutUsDetails()),
+        safeCall(() => this.getBannerNews()),
+        safeCall(() => this.getCelebrationData()),
+        safeCall(() => this.getCelebrationSubData()),
+        safeCall(() => this.getQuizDetails()),
+        safeCall(() => this.loadExistingAnswers()),
+        safeCall(() => this.getAnnouncementsall()),
+        safeCall(() => this.loadVideos()),
+        safeCall(() => this.loadHomeVideos()),
+        safeCall(() => this.getUpcomingEvents()),
+        safeCall(() => this.getBirthdayData()),
+        safeCall(() => this.getAllCalendarEvents()),
       ]);
 
       // Handle route change AFTER data is loaded (for detail pages, etc.)
       this.handleRouteChange();
     } catch (err) {
-      console.error(err);
     }
   }
 
   public componentWillUnmount(): void {
     // Clean up event listener
     window.removeEventListener("popstate", this.handlePopState);
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     if (this.heroSlideTimeoutId !== null) {
       window.clearTimeout(this.heroSlideTimeoutId);
       this.heroSlideTimeoutId = null;
@@ -4853,46 +5141,58 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   }
 
   private async loadQuickLinks() {
-    const items: any[] = await sp.web.lists
-      .getByTitle("Quick Links")
-      .items.select(
-        "Id",
-        "Title",
-        "Level",
-        "Parent/Id",
-        "Parent/Title",
-        "Url",
-        "Icon",
-        "Order",
-      )
-      .expand("Parent,AttachmentFiles")
-      .orderBy("Order")();
+    try {
+      const items: any[] = await sp.web.lists
+        .getByTitle("Quick Links")
+        .items.select(
+          "Id",
+          "Title",
+          "Level",
+          "Parent/Id",
+          "Parent/Title",
+          "Url",
+          "Icon",
+          "Order",
+        )
+        .expand("Parent,AttachmentFiles")
+        .orderBy("Order")();
 
 
-    const hierarchy = this.build3LevelHierarchy(items);
-    this.setState({ quickLinks: hierarchy });
+      const hierarchy = this.build3LevelHierarchy(items);
+      this.setState({ quickLinks: hierarchy });
+    } catch (error) {
+      this.setState({ quickLinks: {} });
+    }
   }
 
   private build3LevelHierarchy(items: any[]): Record<string, NavNode[]> {
+    if (!items || !Array.isArray(items)) return {};
     // 1. Typed nodes array
-    const nodes: NavNode[] = items.map(
-      (item: any): NavNode => ({
-        id: item.Id,
-        title: item.Title,
-        level: item.Level,
-        parentId: item["Parent/Id"] || item.Parent?.Id,
-        parentTitle: item["Parent/Title"] || item.Parent?.Title,
-        url: item["Url/Url"] || item.Url?.Url || "#",
-        icon:
-          item.AttachmentFiles.length > 0
-            ? item.AttachmentFiles[0].ServerRelativeUrl
-            : item.Icon
-              ? JSON.parse(item.Icon).serverRelativeUrl
-              : require(`../assets/directorywhite.png`),
-        order: item.Order || 999,
-        children: [] as NavNode[],
-      }),
-    );
+    const nodes: NavNode[] = items
+      .filter((item) => item !== null && item !== undefined)
+      .map(
+        (item: any): NavNode => {
+          let icon = require(`../assets/directorywhite.png`);
+          try {
+            if (item.AttachmentFiles && item.AttachmentFiles.length > 0) {
+              icon = item.AttachmentFiles[0].ServerRelativeUrl;
+            } else if (item.Icon) {
+              icon = JSON.parse(item.Icon).serverRelativeUrl || icon;
+            }
+          } catch (e) { /* use default icon */ }
+          return {
+            id: item.Id,
+            title: item.Title || "",
+            level: item.Level || "",
+            parentId: item["Parent/Id"] || item.Parent?.Id,
+            parentTitle: item["Parent/Title"] || item.Parent?.Title,
+            url: item["Url/Url"] || item.Url?.Url || "#",
+            icon,
+            order: item.Order || 999,
+            children: [] as NavNode[],
+          };
+        },
+      );
 
     // 2. Typed ID map
     const idMap: Map<number, NavNode> = new Map(
@@ -4996,24 +5296,33 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   };
 
   private async loadExistingAnswers() {
-    // const email = this.state.userEmail;
-    const user = await sp.web.currentUser();
+    try {
+      // const email = this.state.userEmail;
+      const user = await sp.web.currentUser();
 
-    const items = await sp.web.lists
-      .getByTitle("QuizResponses")
-      .items.select("Id", "Title", "User/Id", "User/Title", "SelectedOption")
-      .expand("User")
-      .filter(`UserId eq '${user.Id}'`)
-      .top(5000)();
+      const items = await sp.web.lists
+        .getByTitle("QuizResponses")
+        .items.select("Id", "Title", "User/Id", "User/Title", "SelectedOption")
+        .expand("User")
+        .filter(`UserId eq '${user.Id}'`)
+        .top(5000)();
 
 
-    const answers: { [id: number]: string } = {};
-    items.forEach((i) => {
-      const qId = parseInt(i.Title, 10); // assuming Title = question ID
-      answers[qId] = i.SelectedOption;
-    });
+      const answers: { [id: number]: string } = {};
+      if (items && Array.isArray(items)) {
+        items.forEach((i) => {
+          if (i && i.Title) {
+            const qId = parseInt(i.Title, 10); // assuming Title = question ID
+            if (!isNaN(qId)) {
+              answers[qId] = i.SelectedOption || "";
+            }
+          }
+        });
+      }
 
-    this.setState({ answers });
+      this.setState({ answers });
+    } catch (error) {
+    }
   }
 
   private getQuickLinksDetails = async () => {
@@ -5040,7 +5349,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         this.setState({ quickLinks: grouped });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5053,29 +5361,44 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .orderBy("Modified", false)
         .top(5)();
 
-      if (CompanyNewsDetails.length > 0) {
+      if (CompanyNewsDetails && Array.isArray(CompanyNewsDetails) && CompanyNewsDetails.length > 0) {
         this.setState({ announcementData: CompanyNewsDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
   private getCompanyEvents = async () => {
     try {
-      const CompanyEventsDetails = await sp.web.lists
+      const fetched = await sp.web.lists
         .getByTitle("Company Events")
         .items.select("ID,Title,Time,Category,Image,Created,Link,Date")
         .expand("AttachmentFiles")
         .orderBy("Date", false)
-        .top(5)();
+        .top(100)();
 
-      if (CompanyEventsDetails.length > 0) {
+      // Pick the 3 to show: soonest UPCOMING event first. If there are fewer
+      // than 3 upcoming events, backfill with the most recent PAST events so the
+      // homepage section is never empty. Done in JS (not an OData date filter)
+      // for reliability across timezones/date-only fields.
+      const todayStart = moment().startOf('day');
+      const keyDate = (e: any) => e.Date || e.Created;
+      const dated = (fetched || []).filter((e: any) => e && keyDate(e));
+      const upcoming = dated
+        .filter((e: any) => moment(keyDate(e)).isSameOrAfter(todayStart))
+        .sort((a: any, b: any) => +new Date(keyDate(a)) - +new Date(keyDate(b)));
+      const past = dated
+        .filter((e: any) => moment(keyDate(e)).isBefore(todayStart))
+        .sort((a: any, b: any) => +new Date(keyDate(b)) - +new Date(keyDate(a)));
+      const CompanyEventsDetails = [...upcoming, ...past].slice(0, 3);
+
+      if (CompanyEventsDetails && Array.isArray(CompanyEventsDetails) && CompanyEventsDetails.length > 0) {
         let skipDescription = false;
         let skipDetailsUpper = false;
         let skipDetailsLower = false;
 
         for (let i = 0; i < CompanyEventsDetails.length; i++) {
+          if (!CompanyEventsDetails[i]) continue;
           if (!skipDescription) {
             try {
               const descItem = await sp.web.lists
@@ -5120,7 +5443,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         this.setState({ companyeventsLoading: false });
       }
     } catch (error) {
-      console.log(error);
       this.setState({ companyeventsLoading: false });
     }
   };
@@ -5138,43 +5460,44 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(4999)();
 
 
-      if (eventsItems.length > 0) {
+      if (eventsItems && Array.isArray(eventsItems) && eventsItems.length > 0) {
         // Transform events to calendar format
-        const calendarEvents = eventsItems.map((event: any) => {
-          const startDate = event.Date || event.Created;
-          const endDate = startDate; // Company Events doesn't have EndDate
+        const calendarEvents = eventsItems
+          .filter(event => event !== null && event !== undefined)
+          .map((event: any) => {
+            const startDate = event.Date || event.Created;
+            const endDate = startDate; // Company Events doesn't have EndDate
 
-          let imageURL = "";
-          try {
-            imageURL =
-              event.AttachmentFiles && event.AttachmentFiles.length > 0
-                ? event.AttachmentFiles[0].ServerRelativeUrl
-                : event.Image
-                  ? JSON.parse(event.Image).serverRelativeUrl
-                  : "";
-          } catch (e) {
-            imageURL = "";
-          }
+            let imageURL = "";
+            try {
+              imageURL =
+                event.AttachmentFiles && event.AttachmentFiles.length > 0
+                  ? event.AttachmentFiles[0].ServerRelativeUrl
+                  : event.Image
+                    ? JSON.parse(event.Image).serverRelativeUrl
+                    : "";
+            } catch (e) {
+              imageURL = "";
+            }
 
-          return {
-            id: event.ID,
-            title: event.Title,
-            start: new Date(startDate),
-            end: new Date(endDate),
-            category: event.Category || "",
-            time: event.Time || "",
-            location: "",
-            description: event.details || event.Details || "",
-            heroImage: imageURL,
-            allDay: true,
-            resource: event,
-          };
-        });
+            return {
+              id: event.ID || "",
+              title: event.Title || "Untitled Event",
+              start: startDate ? new Date(startDate) : new Date(),
+              end: endDate ? new Date(endDate) : new Date(),
+              category: event.Category || "",
+              time: event.Time || "",
+              location: "",
+              description: event.details || event.Details || "",
+              heroImage: imageURL,
+              allDay: true,
+              resource: event,
+            };
+          });
 
         this.setState({ allCalendarEvents: calendarEvents });
       }
     } catch (error) {
-      console.error("Error fetching calendar events:", error);
     }
   };
 
@@ -5187,11 +5510,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(4999)();
 
 
-      if (AboutUsDetails.length > 0) {
+      if (AboutUsDetails && Array.isArray(AboutUsDetails) && AboutUsDetails.length > 0) {
         this.setState({ aboutUS: AboutUsDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5206,7 +5528,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(4999)();
 
 
-      if (!items.length) return;
+      if (!items || !Array.isArray(items) || !items.length) return;
 
       // sort by Modified desc
       const sorted = items.sort(
@@ -5217,6 +5539,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       // take latest per Category
       const latestByCategory: { [cat: string]: any } = {};
       sorted.forEach((it) => {
+        if (!it) return;
         const cat = it.Category || "Dashboard";
         if (!latestByCategory[cat]) {
           latestByCategory[cat] = it; // first in sorted list = latest
@@ -5225,7 +5548,6 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
       this.setState({ news: latestByCategory });
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5238,11 +5560,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(4)();
 
 
-      if (CelebrationDetails.length > 0) {
+      if (CelebrationDetails && Array.isArray(CelebrationDetails) && CelebrationDetails.length > 0) {
         this.setState({ celebrationData: CelebrationDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5255,11 +5576,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(4999)();
 
 
-      if (CelebrationSubDetails.length > 0) {
+      if (CelebrationSubDetails && Array.isArray(CelebrationSubDetails) && CelebrationSubDetails.length > 0) {
         this.setState({ celebrationDataSub: CelebrationSubDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5271,11 +5591,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(1)();
 
 
-      if (QuiznDetails.length > 0) {
+      if (QuiznDetails && Array.isArray(QuiznDetails) && QuiznDetails.length > 0) {
         this.setState({ quizData: QuiznDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5289,19 +5608,19 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(4999)();
 
 
-      if (CompanyNewsDetails.length > 0) {
+      if (CompanyNewsDetails && Array.isArray(CompanyNewsDetails) && CompanyNewsDetails.length > 0) {
         this.setState({
           announcementSearchArray: CompanyNewsDetails,
         });
         this.pagination(1, CompanyNewsDetails);
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
   // function to set pagination
   public pagination(crntPage, libraryData) {
+    if (!libraryData || !Array.isArray(libraryData)) return;
     var startCount = (crntPage - 1) * viewCount;
     var endCount = crntPage * viewCount;
     let pagedArr = libraryData.slice(startCount, endCount);
@@ -5322,8 +5641,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   public searchUsers = (text) => {
     this.setState({ announcementSearchText: text });
     let SearchUser = this.state.announcementSearchArray.filter((value) => {
-      let val = value.Title.toLowerCase();
-      let val1 = value.Description.toLowerCase();
+      let val = (value.Title || "").toLowerCase();
+      let val1 = (value.Description || "").toLowerCase();
       if (
         val.includes(text.toLowerCase()) ||
         val1.includes(text.toLowerCase())
@@ -5341,127 +5660,81 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       array = [];
     let index = 0;
     try {
-      let aadTokenProvider =
-        await this.props.spfxContext.aadTokenProviderFactory.getTokenProvider();
-      let token = await aadTokenProvider.getToken(
-        "https://graph.microsoft.com",
-      );
-      console.log(token);
-
       await this.props.spfxContext.msGraphClientFactory
         .getClient()
         .then(async (client: MSGraphClient) => {
           let groupId = "2e58377d-bda5-466d-bb25-3394dfc1083d";
 
-          await client
-            .api(`/groups/${groupId}/calendar/events`)
-            .version("v1.0")
-            .filter(`start/dateTime ge '${new Date().toISOString()}'`)
-            .orderby("start/dateTime")
-            .top(5)
-            .get((err, res?: any) => {
-              console.log("Events", res);
+          try {
+            await client
+              .api(`/groups/${groupId}/calendar/events`)
+              .version("v1.0")
+              .filter(`start/dateTime ge '${new Date().toISOString()}'`)
+              .orderby("start/dateTime")
+              .top(5)
+              .get((err, res?: any) => {
 
-              res.value.forEach(async (element, i) => {
-                index = i;
-                // let StartString = (element.body.content).indexOf('https');
-                // let EndString = element.subject.startsWith('Task_') ? (element.body.content).indexOf('">Open') : (element.body.content).indexOf('" style');
-                // let AuditUrl = ((element.body.content).slice(StartString, EndString));
+                if (err) {
+                  return;
+                }
+                if (!res || !res.value) {
+                  return;
+                }
 
-                // let StartDate = element.subject.startsWith('Task_') ? moment(element.start.dateTime).format('YYYY-MM-DD') + 'T00:01:00' : moment(element.end.dateTime).format('YYYY-MM-DD') + 'T00:01:00';
+                res.value.forEach(async (element, i) => {
+                  index = i;
 
-                let StartDate = Moment.tz(element.start.dateTime, "UTC")
-                  .tz(Intl.DateTimeFormat().resolvedOptions().timeZone)
-                  .format("YYYY-MM-DDTHH:mm:ss"); // Preserve selected time
-                // let StartDate = moment(element.end.dateTime).format('YYYY-MM-DD') + 'T00:01:00';
-                // let EndDate = moment(element.end.dateTime).format('YYYY-MM-DD') + 'T23:59:00';
-                let EndDate = Moment.tz(element.end.dateTime, "UTC")
-                  .tz(Intl.DateTimeFormat().resolvedOptions().timeZone)
-                  .format("YYYY-MM-DDTHH:mm:ss");
+                  let StartDate = "";
+                  let EndDate = "";
+                  try {
+                    // Graph returns UTC; render in the browser's local zone.
+                    // (moment.utc(x).local() ≡ the old moment-timezone
+                    // Moment.tz(x,"UTC").tz(browserTz) without the ~500 KB tz db.)
+                    StartDate = element.start?.dateTime ? moment.utc(element.start.dateTime).local().format("YYYY-MM-DDTHH:mm:ss") : "";
+                    EndDate = element.end?.dateTime ? moment.utc(element.end.dateTime).local().format("YYYY-MM-DDTHH:mm:ss") : "";
+                  } catch (e) {
+                    StartDate = element.start?.dateTime ? moment.utc(element.start.dateTime).format("YYYY-MM-DDTHH:mm:ss") : "";
+                    EndDate = element.end?.dateTime ? moment.utc(element.end.dateTime).format("YYYY-MM-DDTHH:mm:ss") : "";
+                  }
 
-                if (this.state.sIsDropdownSelected == true) {
-                  if (
-                    element.categories[0] == this.state.sSingleValueDropdown
-                  ) {
+                  let categoryMatch = false;
+                  if (this.state.sIsDropdownSelected == true) {
+                    if (element.categories && element.categories.length > 0 && element.categories[0] == this.state.sSingleValueDropdown) {
+                      categoryMatch = true;
+                    }
+                  } else {
+                    categoryMatch = true;
+                  }
+
+                  if (categoryMatch) {
                     lAllEventsData.push({
                       id: element.id,
-                      Title: element.subject,
-                      // "EventDate1": new Date(StartDate),
-                      // "EndDate1": new Date(EndDate),
-                      // "EventDate": new Date(element.end.dateTime),
-                      // "EndDate": new Date(element.end.dateTime),
-                      isAllDay: element.isAllDay,
-                      attendees: element.attendees,
-                      categories: element.categories,
-                      recurrence: element.recurrence,
-                      type: element.type,
-                      iCalUId: element.iCalUId,
-                      ownerName: element.organizer.emailAddress.name,
-                      location: element.location.displayName,
-                      // "AuditUrl": AuditUrl,
+                      Title: element.subject || "",
+                      isAllDay: element.isAllDay || false,
+                      attendees: element.attendees || [],
+                      categories: element.categories || [],
+                      recurrence: element.recurrence || null,
+                      type: element.type || "",
+                      iCalUId: element.iCalUId || "",
+                      ownerName: element.organizer?.emailAddress?.name || "",
+                      location: element.location?.displayName || "",
                       EventDateDay: StartDate ? moment(StartDate).date() : "",
-                      EventDateMonth: StartDate
-                        ? moment(StartDate).format("MMMM")
-                        : "",
-                      EventDate: StartDate
-                        ? moment(StartDate).format("DD MMMM YYYY")
-                        : "",
+                      EventDateMonth: StartDate ? moment(StartDate).format("MMMM") : "",
+                      EventDate: StartDate ? moment(StartDate).format("DD MMMM YYYY") : "",
                       EndDateDay: EndDate ? moment(EndDate).date() : "",
                       EndDate: EndDate,
                       StartDate: StartDate,
-                      startDate1:
-                        moment(StartDate).format("YYYY-MM-DD") +
-                        "T" +
-                        moment(StartDate).format("HH:mm:ss"),
-                      endDate1:
-                        moment(EndDate).format("YYYY-MM-DD") +
-                        "T" +
-                        moment(EndDate).format("HH:mm:ss"),
+                      startDate1: StartDate ? moment(StartDate).format("YYYY-MM-DD") + "T" + moment(StartDate).format("HH:mm:ss") : "",
+                      endDate1: EndDate ? moment(EndDate).format("YYYY-MM-DD") + "T" + moment(EndDate).format("HH:mm:ss") : "",
                     });
                   }
-                } else {
-                  lAllEventsData.push({
-                    id: element.id,
-                    Title: element.subject,
-                    // "EventDate1": new Date(StartDate),
-                    // "EndDate1": new Date(EndDate),
-                    // "EventDate": new Date(element.end.dateTime),
-                    // "EndDate": new Date(element.end.dateTime),
-                    isAllDay: element.isAllDay,
-                    attendees: element.attendees,
-                    categories: element.categories,
-                    recurrence: element.recurrence,
-                    type: element.type,
-                    iCalUId: element.iCalUId,
-                    ownerName: element.organizer.emailAddress.name,
-                    location: element.location.displayName,
-                    // "AuditUrl": AuditUrl,
-                    EventDateDay: StartDate ? moment(StartDate).date() : "",
-                    EventDateMonth: StartDate
-                      ? moment(StartDate).format("MMMM")
-                      : "",
-                    EventDate: StartDate
-                      ? moment(StartDate).format("DD MMMM YYYY")
-                      : "",
-                    EndDateDay: EndDate ? moment(EndDate).date() : "",
-                    EndDate: EndDate,
-                    StartDate: StartDate,
-                    startDate1:
-                      moment(StartDate).format("YYYY-MM-DD") +
-                      "T" +
-                      moment(StartDate).format("HH:mm:ss"),
-                    endDate1:
-                      moment(EndDate).format("YYYY-MM-DD") +
-                      "T" +
-                      moment(EndDate).format("HH:mm:ss"),
-                  });
-                }
+                });
+                this.setState({ sAllEvents: lAllEventsData });
               });
-              this.setState({ sAllEvents: lAllEventsData });
-            });
+          } catch (graphErr) {
+          }
         });
     } catch (err) {
-      console.error("Error fetching group events:", err);
     }
   };
 
@@ -5474,11 +5747,10 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .top(5)();
 
 
-      if (CelebrationDetails.length > 0) {
+      if (CelebrationDetails && Array.isArray(CelebrationDetails) && CelebrationDetails.length > 0) {
         this.setState({ birthdayData: CelebrationDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
@@ -5531,6 +5803,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         .orderBy("Modified", false) // Latest first (descending)
         () // Use () instead of .then()
         .then((res) => {
+          if (!res || !Array.isArray(res)) return [];
           const videoExts = [
             "mp4",
             "avi",
@@ -5547,7 +5820,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
           ];
 
           return res.filter((i) => {
-            const fileName = i.FileLeafRef.toLowerCase();
+            if (!i) return false;
+            const fileName = (i.FileLeafRef || "").toLowerCase();
             return videoExts.some(
               (ext) =>
                 fileName.endsWith(`.${ext}`) ||
@@ -5558,9 +5832,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
       this.setState({ videosSearchArray: items });
       this.pagination2(1, items);
-      console.log("Latest videos first:", items);
     } catch (error) {
-      console.error("Error loading videos:", error);
     }
   };
 
@@ -5579,6 +5851,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       ]);
 
       const extractUrl = (i: any): string => {
+        if (!i) return "";
         let videoMatch = "";
         let anyMatch = "";
         for (const k of Object.keys(i)) {
@@ -5595,19 +5868,23 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         return videoMatch || anyMatch;
       };
 
-      const fromList = listItems
-        .map((i: any) => ({ ...i, _videoUrl: extractUrl(i) }))
-        .filter((i: any) => i._videoUrl.length > 0);
+      const fromList = (listItems && Array.isArray(listItems))
+        ? listItems
+            .filter((i: any) => i !== null && i !== undefined)
+            .map((i: any) => ({ ...i, _videoUrl: extractUrl(i) }))
+            .filter((i: any) => i._videoUrl && i._videoUrl.length > 0)
+        : [];
 
       const tenantRoot = this.props.siteUrl;
-      const fromLibrary = (libraryItems as any[])
-        .filter((i: any) => i.FileLeafRef && videoExts.test(i.FileLeafRef))
-        .map((i: any) => ({ ...i, _videoUrl: `${tenantRoot}${i.FileRef}` }));
+      const fromLibrary = (libraryItems && Array.isArray(libraryItems))
+        ? (libraryItems as any[])
+            .filter((i: any) => i && i.FileLeafRef && videoExts.test(i.FileLeafRef))
+            .map((i: any) => ({ ...i, _videoUrl: `${tenantRoot}${i.FileRef}` }))
+        : [];
 
       const filtered = [...fromList, ...fromLibrary]
         .sort((a: any, b: any) => (a.DisplayOrder || 0) - (b.DisplayOrder || 0));
 
-      console.log("[HomeVideos] merged+sorted:", filtered);
       const firstUrl = (filtered[0] && filtered[0]._videoUrl) || '';
       const secondUrl = filtered.length > 1 ? (filtered[1]._videoUrl || '') : '';
       this.setState({
@@ -5618,9 +5895,129 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         slotAClass: 'is-active',
         slotBClass: 'is-staged',
         activeSlot: 'A',
+      }, () => {
+        // Swapping slotAUrl changes the <video src> after mount, which does NOT
+        // re-trigger the autoPlay attribute. Kick playback manually (muted play
+        // is allowed without a user gesture) so the hero video plays from the
+        // start on page load/reload.
+        const active = this.slotARef.current;
+        if (active) {
+          try { active.currentTime = 0; } catch (e) { /* not seekable yet */ }
+          const p = active.play();
+          if (p && typeof p.catch === 'function') p.catch(() => { /* autoplay blocked */ });
+        }
       });
     } catch (err) {
-      console.error("[HomeVideos] Error loading:", err);
+    }
+  };
+
+  /**
+   * Captures the midpoint frame of a video as an image overlay.
+   * Uses a separate hidden video element to seek & capture, so the main
+   * video never gets seeked — its controls always show 0:00 cleanly.
+   */
+  private setVideoThumbnailToMidpoint = (v: HTMLVideoElement): void => {
+    try {
+      const src = v.currentSrc || v.src;
+      if (!src) return;
+      // Only generate poster once per source
+      if ((v as any)._posterGenerated === src) return;
+      if (!v.paused) return;
+
+      const duration = v.duration;
+      if (!duration || duration <= 0 || isNaN(duration) || !isFinite(duration)) return;
+
+      (v as any)._posterGenerated = src;
+      const midPoint = duration / 2;
+
+      // Create a hidden helper video to seek & capture the midpoint frame
+      // This avoids touching the main video's currentTime at all.
+      const helper = document.createElement('video');
+
+      // Helper function to check if the video URL is cross-origin.
+      // If it is same-origin (SharePoint-hosted), we must not set crossOrigin = 'anonymous',
+      // otherwise authentication cookies won't be sent and the file request will fail.
+      const isCrossOrigin = (url: string): boolean => {
+        try {
+          const urlObj = new URL(url, window.location.href);
+          return urlObj.origin !== window.location.origin;
+        } catch (e) {
+          return false;
+        }
+      };
+
+      if (isCrossOrigin(src)) {
+        helper.crossOrigin = 'anonymous';
+      }
+
+      // 'metadata' + seeking on loadedmetadata makes the browser range-request
+      // only the midpoint segment instead of downloading the whole file per card.
+      helper.muted = true;
+      helper.preload = 'metadata';
+      helper.playsInline = true;
+      helper.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+      document.body.appendChild(helper);
+
+      const cleanup = (): void => {
+        try {
+          helper.pause();
+          helper.removeAttribute('src');
+          helper.load();
+          if (helper.parentNode) helper.parentNode.removeChild(helper);
+        } catch (_e) {}
+      };
+
+      // Safety timeout — remove helper if nothing happens in 10s
+      const safetyTimer = setTimeout(() => { cleanup(); }, 10000);
+
+      helper.addEventListener('loadedmetadata', () => {
+        helper.currentTime = midPoint;
+      }, { once: true });
+
+      helper.addEventListener('seeked', () => {
+        clearTimeout(safetyTimer);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = helper.videoWidth || v.videoWidth || 640;
+          canvas.height = helper.videoHeight || v.videoHeight || 360;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(helper, 0, 0, canvas.width, canvas.height);
+            const posterUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+            // Create an image overlay positioned over the main video
+            const parent = v.parentElement;
+            if (parent) {
+              let overlay = parent.querySelector('.video-poster-overlay') as HTMLImageElement;
+              if (!overlay) {
+                overlay = document.createElement('img');
+                overlay.className = 'video-poster-overlay';
+                overlay.style.cssText =
+                  'position:absolute;top:0;left:0;width:100%;height:100%;' +
+                  'object-fit:cover;pointer-events:none;z-index:1;border-radius:inherit;';
+                parent.appendChild(overlay);
+              }
+              overlay.src = posterUrl;
+              overlay.style.display = 'block';
+            }
+          }
+        } catch (err) {
+        }
+        // Main video stays at 0:00 — we never touched it
+        (v as any)._posterReady = true;
+        cleanup();
+      }, { once: true });
+
+      helper.addEventListener('error', () => {
+        clearTimeout(safetyTimer);
+        cleanup();
+      }, { once: true });
+
+      // Append cache-busting query parameter + media fragment to avoid browser cache crosstalk
+      // between the helper video and the main video element.
+      const separator = src.includes('?') ? '&' : '?';
+      helper.src = `${src}${separator}thumb=true#t=${midPoint}`;
+    } catch (err) {
     }
   };
 
@@ -5632,8 +6029,58 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
     const afterNextIdx = (nextIdx + 1) % homeVideos.length;
     const wasActiveSlot = activeSlot;
 
+    // Fullscreen path: two <video> slots can't crossfade in fullscreen — only one
+    // element is *the* fullscreen element, and browsers block moving fullscreen to
+    // the other element outside a user gesture (that handoff is what got stuck on
+    // the frozen last frame). So keep the SAME fullscreen element and just swap its
+    // src to the next video; still pre-stage the standby slot so the normal
+    // crossfade resumes correctly once the user exits fullscreen.
+    const activeRef = wasActiveSlot === 'A' ? this.slotARef : this.slotBRef;
+    const activeVideo = activeRef.current;
+    const fsDoc = document as any;
+    const fsEl = fsDoc.fullscreenElement || fsDoc.webkitFullscreenElement || null;
+    const inFullscreen = (!!fsEl && fsEl === activeVideo)
+      || (!!activeVideo && (activeVideo as any).webkitDisplayingFullscreen);
+
+    if (inFullscreen && activeVideo) {
+      if (this.heroSlideTimeoutId !== null) { window.clearTimeout(this.heroSlideTimeoutId); this.heroSlideTimeoutId = null; }
+      const fsNextUrl = (homeVideos[nextIdx] && homeVideos[nextIdx]._videoUrl) || '';
+      const fsAfterUrl = (homeVideos[afterNextIdx] && homeVideos[afterNextIdx]._videoUrl) || '';
+      // Runs after React has written the new src attribute; reload + play the same
+      // (still-fullscreen) element so it shows the next clip instead of freezing.
+      // load() buffers from scratch, so a long/large clip isn't immediately
+      // playable — calling play() right away gets aborted by the in-flight load
+      // and the video stays paused (the "stuck on the 13-minute clip" bug). So we
+      // wait for 'canplay' before starting; short clips fire it almost instantly.
+      const resume = (): void => {
+        const v = activeRef.current;
+        if (!v) return;
+        const tryPlay = (): void => {
+          const pr = v.play();
+          if (pr && typeof pr.catch === 'function') pr.catch(() => { /* autoplay blocked */ });
+        };
+        const onCanPlay = (): void => {
+          v.removeEventListener('canplay', onCanPlay);
+          tryPlay();
+        };
+        try { v.load(); } catch (e) { /* */ }
+        if (v.readyState >= 3 /* HAVE_FUTURE_DATA */) {
+          tryPlay();
+        } else {
+          v.addEventListener('canplay', onCanPlay);
+        }
+      };
+      if (wasActiveSlot === 'A') {
+        this.setState({ slotAUrl: fsNextUrl, slotBUrl: fsAfterUrl, currentHeroVideoIndex: nextIdx }, resume);
+      } else {
+        this.setState({ slotBUrl: fsNextUrl, slotAUrl: fsAfterUrl, currentHeroVideoIndex: nextIdx }, resume);
+      }
+      return;
+    }
+
     const stagedRef = wasActiveSlot === 'A' ? this.slotBRef : this.slotARef;
     if (stagedRef.current) {
+      try { stagedRef.current.currentTime = 0; } catch (e) { /* not seekable yet */ }
       const p = stagedRef.current.play();
       if (p && typeof p.catch === 'function') p.catch(() => { /* autoplay blocked */ });
     }
@@ -5666,10 +6113,51 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
     }, this.SLIDE_SETTLE_MS);
   };
 
+  private handleVisibilityChange = (): void => {
+    if (!document.hidden) this.playActiveHeroSlot();
+  };
+
+  // Ensures the hero video on THE SOURCE tab is playing. Called when returning to
+  // the tab via in-app navigation or when the browser tab regains visibility —
+  // the video can be left paused (browsers pause non-visible/unmounted videos and
+  // don't auto-resume). Retries briefly in case the slot is still remounting.
+  private playActiveHeroSlot = (attempt: number = 0): void => {
+    if (this.state.currentRoute !== "/") return;
+    const ref = this.state.activeSlot === 'A' ? this.slotARef : this.slotBRef;
+    const video = ref.current;
+    if (video) {
+      if (video.paused) {
+        const p = video.play();
+        if (p && typeof p.catch === 'function') p.catch(() => { /* autoplay blocked */ });
+      }
+    } else if (attempt < 5) {
+      window.setTimeout(() => this.playActiveHeroSlot(attempt + 1), 120);
+    }
+  };
+
   private hidePlayOverlay = (e: React.SyntheticEvent<HTMLVideoElement>): void => {
     const wrapper = (e.currentTarget as HTMLElement).closest('.hero-video-wrapper');
-    const overlay = wrapper ? (wrapper.querySelector('.play-button-overlay') as HTMLElement | null) : null;
+    if (!wrapper) return;
+    const overlay = wrapper.querySelector('.play-button-overlay') as HTMLElement | null;
     if (overlay) overlay.style.display = 'none';
+    // Hide the loading logo/spinner once the video actually starts playing.
+    const loader = wrapper.querySelector('.hero-loading-overlay') as HTMLElement | null;
+    if (loader) loader.style.display = 'none';
+  };
+
+  // Fired when a hero slot starts playing. Beyond hiding the overlay, this
+  // background-buffers the standby slot so the crossfade stays seamless — the
+  // standby renders with preload='metadata' (so first paint downloads only one
+  // video), and we upgrade it to full buffering only after the active one is
+  // already playing.
+  private handleHeroPlay = (e: React.SyntheticEvent<HTMLVideoElement>): void => {
+    this.hidePlayOverlay(e);
+    if (this.state.homeVideos.length <= 1) return;
+    const stagedRef = this.state.activeSlot === 'A' ? this.slotBRef : this.slotARef;
+    const el = stagedRef.current;
+    if (el && el.preload !== 'auto') {
+      try { el.preload = 'auto'; el.load(); } catch (err) { /* not ready yet */ }
+    }
   };
 
   private handlePlayOverlayClick = (e: React.MouseEvent<HTMLDivElement>): void => {
@@ -5704,8 +6192,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   public videosSearchUsers = (text) => {
     this.setState({ videosSearchText: text });
     let SearchUser = this.state.videosSearchArray.filter((value) => {
-      let val = value.FileLeafRef.toLowerCase();
-      let val1 = value.VideoDescription.toLowerCase();
+      let val = (value.FileLeafRef || "").toLowerCase();
+      let val1 = (value.VideoDescription || "").toLowerCase();
       if (
         val.includes(text.toLowerCase()) ||
         val1.includes(text.toLowerCase())
@@ -5718,11 +6206,83 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
   // ===== Bulk Import Handlers =====
 
+  // Downloads the real bulk-upload template (McAlvain_CompanyEvents_SampleUpload.xlsx,
+  // the MCA-113 2-tab file), embedded base64 in sampleUploadTemplate.ts. Decoded to
+  // a Blob and saved as-is — byte-identical to the source file.
+  private downloadSampleTemplate = async (): Promise<void> => {
+    try {
+      // Template payload (15 KB base64) is lazy-loaded — admin-only feature.
+      const { SAMPLE_UPLOAD_TEMPLATE_BASE64 } = await import("./sampleUploadTemplate");
+      const byteChars = atob(SAMPLE_UPLOAD_TEMPLATE_BASE64);
+      const bytes = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([bytes], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'McAlvain_CompanyEvents_SampleUpload.xlsx';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      // Chunk fetch can fail after a new deploy replaced the hashed asset, or
+      // offline — tell the user instead of failing silently.
+      window.alert('Could not load the sample template. Please refresh the page and try again.');
+    }
+  };
+
+  // Show the Bulk Upload option only to members of the site's Owners group
+  // ("Site owners - full control") or site-collection admins. Members with the
+  // "Edit" level are NOT in the owner group, so they don't see it. Fails closed.
+  private checkSiteAdmin = async (): Promise<void> => {
+    try {
+      // Current user + the SharePoint groups they belong to (Owners/Members/...),
+      // and the site's Owners group membership — fetched together.
+      const [user, ownerUsers] = await Promise.all([
+        sp.web.currentUser
+          .expand("Groups")
+          .select("Id", "Title", "LoginName", "Email", "IsSiteAdmin", "Groups/Id", "Groups/Title")(),
+        sp.web.associatedOwnerGroup.users.select("Id", "Title")(),
+      ]);
+
+      const u: any = user;
+      const memberOfGroups = (u.Groups || []).map((g: any) => g.Title);
+      const isOwner = Array.isArray(ownerUsers)
+        && ownerUsers.some((ou: any) => ou.Id === u.Id);
+
+      // Effective permission levels (the user's actual "role" capability).
+      let effectivePermissions: any = "unavailable";
+      try {
+        const p = await sp.web.getUserEffectivePermissions(u.LoginName);
+        effectivePermissions = {
+          fullControlOrDesign: sp.web.hasPermissions(p, PermissionKind.ManageWeb),
+          managePermissions: sp.web.hasPermissions(p, PermissionKind.ManagePermissions),
+          manageLists: sp.web.hasPermissions(p, PermissionKind.ManageLists),
+          editItems: sp.web.hasPermissions(p, PermissionKind.EditListItems),
+          addItems: sp.web.hasPermissions(p, PermissionKind.AddListItems),
+        };
+      } catch (pe) {
+      }
+
+      const isSiteAdmin = !!u.IsSiteAdmin || isOwner;
+      // Diagnostic: open the browser console on the live page to see WHO the user
+      // is, WHAT groups/roles they hold, and why Bulk Upload shows/hides for them.
+
+      this.setState({ isSiteAdmin });
+    } catch (e) {
+      this.setState({ isSiteAdmin: false });
+    }
+  };
+
+  // Lazily-loaded xlsx module — populated at the top of handleBulkFile before
+  // any consumer (incl. normalizeBulkDate) runs.
+  private _xlsx: typeof XLSXNS;
+
   private normalizeBulkDate(v: any): string {
     if (v == null || v === '') return '';
     if (v instanceof Date) return moment(v).format('YYYY-MM-DD');
     if (typeof v === 'number') {                          // Excel date serial
-      const d = XLSX.SSF.parse_date_code(v);
+      const d = this._xlsx.SSF.parse_date_code(v);
       if (!d) return '';
       return moment({ y: d.y, M: d.m - 1, d: d.d }).format('YYYY-MM-DD');
     }
@@ -5748,14 +6308,16 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
 
   private handleBulkFile = async (file: File): Promise<void> => {
     try {
+      // Load xlsx on first use — keeps ~1 MB out of the initial page bundle.
+      if (!this._xlsx) this._xlsx = await import("xlsx");
       const isCsv = file.name.toLowerCase().endsWith('.csv');
-      let wb: XLSX.WorkBook;
+      let wb: XLSXNS.WorkBook;
       if (isCsv) {
         const text = await file.text();
-        wb = XLSX.read(text, { type: 'string', cellDates: true });
+        wb = this._xlsx.read(text, { type: 'string', cellDates: true });
       } else {
         const buf = await file.arrayBuffer();
-        wb = XLSX.read(buf, { type: 'array', cellDates: true });
+        wb = this._xlsx.read(buf, { type: 'array', cellDates: true });
         
         // Extract embedded images using exceljs dynamically
         const autoImages: File[] = [];
@@ -5789,9 +6351,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
             rowToImageMap.set(1, filename);
           }
         } catch(e) {
-          console.warn("Failed to extract embedded images", e);
         }
-        console.log(`Auto-extracted ${autoImages.length} images from Excel. Map:`, rowToImageMap);
         
         // Merge extracted images with any manually uploaded images
         this.setState(s => ({
@@ -5799,8 +6359,8 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
         }));
 
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<any>(ws, { defval: '', raw: true });
-        
+        const json = this._xlsx.utils.sheet_to_json<any>(ws, { defval: '', raw: true });
+
         let unmappedImages = [...autoImages];
 
         const rows: BulkEventRow[] = json.map((r, i) => {
@@ -5833,7 +6393,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
       
       // Fallback for CSVs
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<any>(ws, { defval: '', raw: true });
+      const json = this._xlsx.utils.sheet_to_json<any>(ws, { defval: '', raw: true });
       const rows: BulkEventRow[] = json.map((r, i) => ({
         Title: String(r.Title ?? '').trim(),
         Category: String(r.Category ?? '').trim(),
@@ -5862,7 +6422,7 @@ export default class Home extends React.Component<IHomeProps, IHomeState> {
   };
 
   private async uploadImageToSiteAssets(file: File): Promise<{ serverRelativeUrl: string; fileName: string }> {
-    const webRelUrl = this.props.spfxContext.pageContext.web.serverRelativeUrl;
+    const webRelUrl = this.props.spfxContext?.pageContext?.web?.serverRelativeUrl || "";
     const folderRelUrl = `${webRelUrl}/SiteAssets/CompanyEventsBulkImport`;
     
     // Ensure folder exists by attempting to create it. 

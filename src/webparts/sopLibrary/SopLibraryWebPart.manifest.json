@@ -1,0 +1,28 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx/client-side-web-part-manifest.schema.json",
+  "id": "b2c4e6f8-1a3d-5b7e-9c0f-2d4a6b8e0c1a",
+  "alias": "SopLibraryWebPart",
+  "componentType": "WebPart",
+
+  "version": "*",
+  "manifestVersion": 2,
+
+  "requiresCustomScript": false,
+  "supportedHosts": ["SharePointWebPart", "SharePointFullPage"],
+  "supportsThemeVariants": true,
+  "supportsFullBleed": true,
+
+  "preconfiguredEntries": [{
+    "groupId": "5c03119e-3074-46fd-976b-c60198311f70",
+    "group": { "default": "Other" },
+    "title": { "default": "SOP Library" },
+    "description": { "default": "Browse, search and download Standard Operating Procedures" },
+    "officeFabricIconFontName": "Library",
+    "properties": {
+      "libraryTitle": "SOP",
+      "versionColumn": "",
+      "revDateColumn": "",
+      "phaseColumn": ""
+    }
+  }]
+}

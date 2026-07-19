@@ -17,6 +17,12 @@ import {
   IFilePickerResult,
 } from "@pnp/spfx-property-controls/lib/PropertyFieldFilePicker";
 import { initPnp } from "../../services/pnpClient";
+import { SPComponentLoader } from '@microsoft/sp-loader';
+
+// Fabric Core 9.6.1 — same stylesheet previously require()'d into the bundle
+// (rule-identical, verified); loadCss dedupes by URL across web parts.
+const FABRIC_CORE_CSS =
+  'https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/9.6.1/css/fabric.min.css';
 
 export interface ISubpageTemplateWebPartProps {
   description: string;
@@ -32,34 +38,7 @@ export default class SubpageTemplateWebPart extends BaseClientSideWebPart<ISubpa
     // @pnp/sp inital setup
     initPnp(this.context);
 
-    const style = document.createElement("style");
-    style.textContent = `
-  #theSourceBootOverlay{position:fixed;inset:0;background:#111;z-index:2147483647}
-`;
-    document.head.appendChild(style);
-
-    const overlay = document.createElement("div");
-    overlay.id = "theSourceBootOverlay";
-    document.body.appendChild(overlay);
-
-    // remove overlay when your main webpart/app is ready
-    window.addEventListener("theSource:ready", () => overlay.remove());
-
-    window.dispatchEvent(new Event("theSource:ready"));
-
-
-    const loader = document.createElement("div");
-    loader.id = "preLoader";
-
-    loader.innerHTML = `
-    <section class="homecontainer">
-      <div class="loader-wrapper">
-        <img style="margin-top: 25%;width:65px;" src="${require('./assets/MCALogoLoadingIcon.gif')}" />
-      </div>
-    </section>
-  `;
-
-    document.body.appendChild(loader);
+    SPComponentLoader.loadCss(FABRIC_CORE_CSS);
 
     return super.onInit();
   }
@@ -72,9 +51,9 @@ export default class SubpageTemplateWebPart extends BaseClientSideWebPart<ISubpa
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName,
+        userDisplayName: this.context.pageContext?.user?.displayName || "User",
         spfxContext: this.context,
-        siteUrl: this.context.pageContext.web.absoluteUrl,
+        siteUrl: this.context.pageContext?.web?.absoluteUrl || "",
       }
     );
 

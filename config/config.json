@@ -65,6 +65,14 @@
           "manifest": "./src/webparts/subpageTemplate/SubpageTemplateWebPart.manifest.json"
         }
       ]
+    },
+    "sop-library-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/sopLibrary/SopLibraryWebPart.js",
+          "manifest": "./src/webparts/sopLibrary/SopLibraryWebPart.manifest.json"
+        }
+      ]
     }
   },
   "externals": {},
@@ -77,6 +85,7 @@
     "CelebrationWebPartStrings": "lib/webparts/celebration/loc/{locale}.js",
     "EventsWebPartStrings": "lib/webparts/events/loc/{locale}.js",
     "BirthdaysWebPartStrings": "lib/webparts/birthdays/loc/{locale}.js",
-    "SubpageTemplateWebPartStrings": "lib/webparts/subpageTemplate/loc/{locale}.js"
+    "SubpageTemplateWebPartStrings": "lib/webparts/subpageTemplate/loc/{locale}.js",
+    "SopLibraryWebPartStrings": "lib/webparts/sopLibrary/loc/{locale}.js"
   }
 }

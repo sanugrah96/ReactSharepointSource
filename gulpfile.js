@@ -10,6 +10,16 @@ build.addSuppression(/Warning - \[configure-webpack\]/);
 // Disable tslint to allow ship builds
 build.tslintCmd.enabled = false;
 
+// Only bundle moment's English locale — no code calls moment.locale(), so the
+// other ~160 locale files (~300 KB min per consuming bundle) are dead weight.
+const webpack = require('webpack');
+build.configureWebpack.mergeConfig({
+  additionalConfiguration: (cfg) => {
+    cfg.plugins.push(new webpack.ContextReplacementPlugin(/moment[\/\\]locale$/, /^\.\/en$/));
+    return cfg;
+  }
+});
+
 var getTasks = build.rig.getTasks;
 build.rig.getTasks = function () {
   var result = getTasks.call(build.rig);

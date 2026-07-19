@@ -105,11 +105,10 @@ export default class Birthdays extends React.Component<IBirthdaysProps, IBirthda
     try {
       const CelebrationDetails = await sp.web.lists.getByTitle("BirthdayWorkAnniversary").items.select("ID,Title,Date,CelebrationType,IconText").orderBy("Modified", false).top(5)();
 
-      if (CelebrationDetails.length > 0) {
+      if (CelebrationDetails && Array.isArray(CelebrationDetails) && CelebrationDetails.length > 0) {
         this.setState({ celebrationData: CelebrationDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   }
 }

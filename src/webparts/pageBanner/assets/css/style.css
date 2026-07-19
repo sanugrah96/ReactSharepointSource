@@ -21,14 +21,14 @@
 
 @font-face {
   font-family: "Druk Text Trial";
-  src: url("../DrukTextMediumTrial.woff");
+  src: url("../DrukTextBoldTrial.woff");
   font-style: normal;
   font-weight: 700;
 }
 
 @font-face {
   font-family: "Druk Text Trial";
-  src: url("../DrukTextMediumTrial.woff");
+  src: url("../DrukTextHeavyTrial.woff");
   font-style: normal;
   font-weight: 900;
 }
@@ -50,7 +50,7 @@
 
 @font-face {
   font-family: "Helvetica Neue";
-  src: url("../HelveticaNeue-MediumExt.woff");
+  src: url("../HelveticaNeueBold.woff");
   font-style: normal;
   font-weight: 700;
 }
@@ -60,8 +60,78 @@
   /* font-family: "Vend Sans", sans-serif !important; */
   font-family: "Druk Text Trial", sans-serif !important;
 }
+
+
+/* ── SharePoint app bar (left rail): custom global-nav hidden ────────────────
+   The custom rail (Discover/Publish/Build/OneDrive) is hidden per request. The
+   top suite-bar waffle/app launcher lives OUTSIDE #sp-appBar, so it — and access
+   to OneDrive / all apps via the launcher — stays. html/body kept dark so the
+   reclaimed strip reads as the theme, never white/orange. */
+
+#sp-appBar {
+  display: none !important;
+}
+
+/* Dark + slightly shorter SharePoint suite bar (modern-DOM coverage + height) */
+#SuiteNavWrapper,
+#suiteBarTop,
+[class^="o365cs-nav-header"],
+[class*="suiteBar"] {
+  background-color: #1f2226 !important;
+}
+#SuiteNavWrapper [class^="ms-Icon"]:before,
+#SuiteNavWrapper i {
+  color: #e8e8e8 !important;
+}
+
+/* Left-align the suite-bar search box (SharePoint centers it by default) */
+#SuiteNavWrapper {
+  justify-content: flex-start !important;
+}
+#sbox-container,
+#searchBoxContainer,
+#O365_SearchBoxContainer,
+#SuiteNavWrapper [class*="searchBox"],
+#SuiteNavWrapper [class*="SearchBox"],
+#SuiteNavWrapper [role="search"],
+.ms-srch-sb {
+  margin-left: 12px !important;
+  margin-right: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+}
+
+/* Full-bleed: kill SharePoint's rounded corners across every page wrapper */
+#spPageCanvasContent,
+#spPageChromeAppDiv,
+#spoAppComponent,
+[data-automation-id="contentScrollRegion"],
+[data-automation-id="CanvasZone"],
+[data-automation-id="CanvasSection"],
+[data-automation-id="CanvasZone-SectionContainer"],
+[data-automation-id="CanvasControl"],
+[class*="CanvasZoneSectionContainer"],
+[class*="CanvasSection"],
+[class*="SectionContainer"],
+[class*="ControlZone"],
+[class*="Canvas"],
+[class*="canvas"] {
+  border-radius: 0 !important;
+}
+
 [data-automation-id="CanvasZone"] {
   background-color: #212121 !important;
+}
+
+/* Remove the top padding gap that cuts off the banner gradient at page top */
+[data-automation-id="CanvasSection"] {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+[data-automation-id="CanvasControl"] {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 #spCommandBar,
 [class^="logoImg"],
@@ -75,14 +145,14 @@
 .o365sx-appName,
 .o365cs-base .o365sx-waffle,
 .o365cs-base .o365sx-button {
-  background-color: #e9e9e9 !important;
+  background-color: #1f2226 !important;
 }
 
 .o365cs-base [class^="ms-Icon--"]:before {
-  color: #6d7385;
+  color: #e8e8e8 !important;
 }
 #O365_AppName {
-  color: #6d7385;
+  color: #e8e8e8 !important;
 }
 
 [data-automationid="SiteHeader"] {
@@ -116,11 +186,12 @@
 .Home-banner {
   /* background-image:url('../Images/Home-banner.png'); */
   /* background: linear-gradient(0deg, rgb(49 49 49 / 30%), rgb(49 49 49)), url('../Images//sub-banner.png'); */
-  height: 300px;
+  height: 400px;
   width: 100%;
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
+  overflow: hidden;
 }
 /* .container {
   width: 1200px;
@@ -129,6 +200,15 @@
 .Home-banner-wrapper {
   padding: 40px 0;
 }
+/* Dark frosted-glass card behind the banner text — image shows freely around it */
+.Home-banner .text-center.w-50 {
+  background: rgba(0, 0, 0, 0.52);
+  border-radius: 10px;
+  padding: 20px 32px 24px;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
 .Home-banner-title {
   font-style: normal;
   font-size: 44px;

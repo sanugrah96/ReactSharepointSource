@@ -38,8 +38,8 @@ export default class EventsWebPart extends BaseClientSideWebPart<IEventsWebPartP
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName,
-        siteUrl: this.context.pageContext.site.absoluteUrl,
+        userDisplayName: this.context.pageContext?.user?.displayName || "User",
+        siteUrl: this.context.pageContext?.site?.absoluteUrl || "",
         spfxContext: this.context,
       }
     );

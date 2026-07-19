@@ -38,34 +38,15 @@ _node_modules_microsoft_sp_css_loader_node_modules_microsoft_load_themed_styles_
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */   "default": () => (/* binding */ Banner)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ 85959);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
-var __extends = (undefined && undefined.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 
 __webpack_require__(/*! ../assets/style.css */ 60900);
-var Banner = /** @class */ (function (_super) {
-    __extends(Banner, _super);
-    function Banner() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    Banner.prototype.render = function () {
-        var _a = this.props, description = _a.description, isDarkTheme = _a.isDarkTheme, environmentMessage = _a.environmentMessage, hasTeamsContext = _a.hasTeamsContext, userDisplayName = _a.userDisplayName;
+class Banner extends react__WEBPACK_IMPORTED_MODULE_0__.Component {
+    render() {
+        const { description, isDarkTheme, environmentMessage, hasTeamsContext, userDisplayName } = this.props;
         return (react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { id: 'Home' },
             react__WEBPACK_IMPORTED_MODULE_0__.createElement("section", { className: "hero" },
                 react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { className: "tagline" }, "\u2728 Pioneering Digital Excellence"),
@@ -322,10 +303,8 @@ var Banner = /** @class */ (function (_super) {
                                     react__WEBPACK_IMPORTED_MODULE_0__.createElement("li", null, "24/7 AI Support"))),
                             react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { className: "case-footer" },
                                 react__WEBPACK_IMPORTED_MODULE_0__.createElement("button", { className: "btn" }, "Read Case Study \u2192"))))))));
-    };
-    return Banner;
-}(react__WEBPACK_IMPORTED_MODULE_0__.Component));
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (Banner);
+    }
+}
 
 
 /***/ }),
@@ -950,7 +929,7 @@ var __webpack_exports__ = {};
   \**********************************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */   "default": () => (/* binding */ BannerWebPart)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ 85959);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
@@ -965,21 +944,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! BannerWebPartStrings */ 72569);
 /* harmony import */ var BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var _components_Banner__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./components/Banner */ 42203);
-var __extends = (undefined && undefined.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 
 
 
@@ -987,55 +951,50 @@ var __extends = (undefined && undefined.__extends) || (function () {
 
 
 
-var BannerWebPart = /** @class */ (function (_super) {
-    __extends(BannerWebPart, _super);
-    function BannerWebPart() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this._isDarkTheme = false;
-        _this._environmentMessage = '';
-        return _this;
+class BannerWebPart extends _microsoft_sp_webpart_base__WEBPACK_IMPORTED_MODULE_4__.BaseClientSideWebPart {
+    constructor() {
+        super(...arguments);
+        this._isDarkTheme = false;
+        this._environmentMessage = '';
     }
-    BannerWebPart.prototype.onInit = function () {
+    onInit() {
         this._environmentMessage = this._getEnvironmentMessage();
-        return _super.prototype.onInit.call(this);
-    };
-    BannerWebPart.prototype.render = function () {
-        var element = react__WEBPACK_IMPORTED_MODULE_0__.createElement(_components_Banner__WEBPACK_IMPORTED_MODULE_6__["default"], {
+        return super.onInit();
+    }
+    render() {
+        var _a, _b;
+        const element = react__WEBPACK_IMPORTED_MODULE_0__.createElement(_components_Banner__WEBPACK_IMPORTED_MODULE_6__["default"], {
             description: this.properties.description,
             isDarkTheme: this._isDarkTheme,
             environmentMessage: this._environmentMessage,
             hasTeamsContext: !!this.context.sdks.microsoftTeams,
-            userDisplayName: this.context.pageContext.user.displayName
+            userDisplayName: ((_b = (_a = this.context.pageContext) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.displayName) || "User"
         });
         react_dom__WEBPACK_IMPORTED_MODULE_1__.render(element, this.domElement);
-    };
-    BannerWebPart.prototype._getEnvironmentMessage = function () {
+    }
+    _getEnvironmentMessage() {
         if (!!this.context.sdks.microsoftTeams) { // running in Teams
             return this.context.isServedFromLocalhost ? BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5__.AppLocalEnvironmentTeams : BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5__.AppTeamsTabEnvironment;
         }
         return this.context.isServedFromLocalhost ? BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5__.AppLocalEnvironmentSharePoint : BannerWebPartStrings__WEBPACK_IMPORTED_MODULE_5__.AppSharePointEnvironment;
-    };
-    BannerWebPart.prototype.onThemeChanged = function (currentTheme) {
+    }
+    onThemeChanged(currentTheme) {
         if (!currentTheme) {
             return;
         }
         this._isDarkTheme = !!currentTheme.isInverted;
-        var semanticColors = currentTheme.semanticColors;
+        const { semanticColors } = currentTheme;
         this.domElement.style.setProperty('--bodyText', semanticColors.bodyText);
         this.domElement.style.setProperty('--link', semanticColors.link);
         this.domElement.style.setProperty('--linkHovered', semanticColors.linkHovered);
-    };
-    BannerWebPart.prototype.onDispose = function () {
+    }
+    onDispose() {
         react_dom__WEBPACK_IMPORTED_MODULE_1__.unmountComponentAtNode(this.domElement);
-    };
-    Object.defineProperty(BannerWebPart.prototype, "dataVersion", {
-        get: function () {
-            return _microsoft_sp_core_library__WEBPACK_IMPORTED_MODULE_2__.Version.parse('1.0');
-        },
-        enumerable: false,
-        configurable: true
-    });
-    BannerWebPart.prototype.getPropertyPaneConfiguration = function () {
+    }
+    get dataVersion() {
+        return _microsoft_sp_core_library__WEBPACK_IMPORTED_MODULE_2__.Version.parse('1.0');
+    }
+    getPropertyPaneConfiguration() {
         return {
             pages: [
                 {
@@ -1055,10 +1014,8 @@ var BannerWebPart = /** @class */ (function (_super) {
                 }
             ]
         };
-    };
-    return BannerWebPart;
-}(_microsoft_sp_webpart_base__WEBPACK_IMPORTED_MODULE_4__.BaseClientSideWebPart));
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (BannerWebPart);
+    }
+}
 
 })();
 

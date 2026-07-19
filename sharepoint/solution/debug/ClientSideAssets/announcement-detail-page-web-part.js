@@ -104,9 +104,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _pnp_sp_items__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @pnp/sp/items */ 95324);
 /* harmony import */ var _pnp_sp_attachments__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @pnp/sp/attachments */ 9926);
 /* harmony import */ var _pnp_sp_site_users_web__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @pnp/sp/site-users/web */ 43500);
-/* harmony import */ var _pnp_sp_files__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @pnp/sp/files */ 14603);
-/* harmony import */ var _pnp_sp_folders__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @pnp/sp/folders */ 79757);
-/* harmony import */ var _pnp_graph_users__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @pnp/graph/users */ 13071);
+/* harmony import */ var _pnp_sp_site_groups__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @pnp/sp/site-groups */ 7918);
+/* harmony import */ var _pnp_sp_security__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! @pnp/sp/security */ 8330);
+/* harmony import */ var _pnp_sp_files__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @pnp/sp/files */ 14603);
+/* harmony import */ var _pnp_sp_folders__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @pnp/sp/folders */ 79757);
+/* harmony import */ var _pnp_graph_users__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @pnp/graph/users */ 13071);
 
 
 
@@ -117,23 +119,25 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var _sp;
-var _graph;
+
+
+let _sp;
+let _graph;
 function initPnp(context) {
     _sp = (0,_pnp_sp__WEBPACK_IMPORTED_MODULE_0__.spfi)().using((0,_pnp_sp__WEBPACK_IMPORTED_MODULE_0__.SPFx)(context));
 }
 function initGraph(context) {
     _graph = (0,_pnp_graph__WEBPACK_IMPORTED_MODULE_1__.graphfi)().using((0,_pnp_graph__WEBPACK_IMPORTED_MODULE_1__.SPFx)(context));
 }
-var sp = new Proxy({}, {
-    get: function (_target, prop) {
+const sp = new Proxy({}, {
+    get(_target, prop) {
         if (!_sp)
             throw new Error("PnP SP not initialized — call initPnp(context) in onInit");
         return _sp[prop];
     },
 });
-var graph = new Proxy({}, {
-    get: function (_target, prop) {
+const graph = new Proxy({}, {
+    get(_target, prop) {
         if (!_graph)
             throw new Error("PnP Graph not initialized — call initGraph(context) in onInit");
         return _graph[prop];
@@ -154,7 +158,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 __webpack_require__(/*! ./AnnouncementDetail.module.css */ 92456);
-var styles = {
+const styles = {
     announcementDetailContainer: 'announcementDetailContainer_d789b0f1',
     loading: 'loading_d789b0f1',
     spinner: 'spinner_d789b0f1',
@@ -205,154 +209,93 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Badge__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Badge */ 86579);
 /* harmony import */ var _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./AnnouncementDetail.module.scss */ 79940);
 /* harmony import */ var _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../../../services/pnpClient */ 26852);
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
 
 
 
 
 
 
-var AnnouncementDetailWithSharePoint = function (_a) {
-    var _b = _a.basePath, basePath = _b === void 0 ? "/announcements" : _b, _c = _a.useSharePoint, useSharePoint = _c === void 0 ? true : _c;
-    var slug = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_4__.useParams)().slug;
-    var navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_4__.useNavigate)();
-    var _d = react__WEBPACK_IMPORTED_MODULE_0__.useState(null), announcement = _d[0], setAnnouncement = _d[1];
-    var _e = react__WEBPACK_IMPORTED_MODULE_0__.useState(true), loading = _e[0], setLoading = _e[1];
-    var _f = react__WEBPACK_IMPORTED_MODULE_0__.useState(null), error = _f[0], setError = _f[1];
-    react__WEBPACK_IMPORTED_MODULE_0__.useEffect(function () {
-        var loadAnnouncement = function () { return __awaiter(void 0, void 0, void 0, function () {
-            var idMatch, id, spItem, items, err_1, err_2, titleFromSlug, items, err_3, transformed, err_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 15, 16, 17]);
-                        setLoading(true);
-                        setError(null);
-                        if (!useSharePoint) return [3 /*break*/, 13];
-                        idMatch = slug.match(/-(\d+)$/);
-                        id = idMatch ? parseInt(idMatch[1], 10) : null;
-                        spItem = null;
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__.sp.web.lists
-                                .getByTitle("Announcements")
-                                .items.select("ID", "Title", "Description", "Detail", "Category", "Tag", "Date", "Time", "Slug", "Content", "Image", "Modified", "Created")
-                                .expand("AttachmentFiles")
-                                .filter("Slug eq '".concat(slug, "'"))
-                                .top(1)()];
-                    case 2:
-                        items = _a.sent();
+const AnnouncementDetailWithSharePoint = ({ basePath = "/announcements", useSharePoint = true }) => {
+    const { slug } = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_4__.useParams)();
+    const navigate = (0,react_router_dom__WEBPACK_IMPORTED_MODULE_4__.useNavigate)();
+    const [announcement, setAnnouncement] = react__WEBPACK_IMPORTED_MODULE_0__.useState(null);
+    const [loading, setLoading] = react__WEBPACK_IMPORTED_MODULE_0__.useState(true);
+    const [error, setError] = react__WEBPACK_IMPORTED_MODULE_0__.useState(null);
+    react__WEBPACK_IMPORTED_MODULE_0__.useEffect(() => {
+        const loadAnnouncement = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                if (useSharePoint) {
+                    // Try to extract ID from slug if it ends with a number
+                    const idMatch = slug ? slug.match(/-(\d+)$/) : null;
+                    const id = idMatch ? parseInt(idMatch[1], 10) : null;
+                    let spItem = null;
+                    // First try to find by Slug field if it exists
+                    try {
+                        const items = await _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__.sp.web.lists
+                            .getByTitle("Announcements")
+                            .items.select("ID", "Title", "Description", "Detail", "Category", "Tag", "Date", "Time", "Slug", "Content", "Image", "Modified", "Created")
+                            .expand("AttachmentFiles")
+                            .filter(`Slug eq '${slug}'`)
+                            .top(1)();
                         if (items && items.length > 0) {
                             spItem = items[0];
                         }
-                        return [3 /*break*/, 4];
-                    case 3:
-                        err_1 = _a.sent();
-                        console.warn("Slug field might not exist, trying by ID or title match");
-                        return [3 /*break*/, 4];
-                    case 4:
-                        if (!(!spItem && id)) return [3 /*break*/, 8];
-                        _a.label = 5;
-                    case 5:
-                        _a.trys.push([5, 7, , 8]);
-                        return [4 /*yield*/, _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__.sp.web.lists
+                    }
+                    catch (err) {
+                    }
+                    // If not found by slug, try by ID
+                    if (!spItem && id) {
+                        try {
+                            spItem = await _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__.sp.web.lists
                                 .getByTitle("Announcements")
                                 .items.getById(id)
                                 .select("ID", "Title", "Description", "Detail", "Category", "Tag", "Date", "Time", "Slug", "Content", "Image", "Modified", "Created")
-                                .expand("AttachmentFiles")()];
-                    case 6:
-                        spItem = _a.sent();
-                        return [3 /*break*/, 8];
-                    case 7:
-                        err_2 = _a.sent();
-                        console.warn("Item not found by ID");
-                        return [3 /*break*/, 8];
-                    case 8:
-                        if (!!spItem) return [3 /*break*/, 12];
-                        titleFromSlug = slug
-                            .replace(/-(\d+)$/, "")
-                            .replace(/-/g, " ");
-                        _a.label = 9;
-                    case 9:
-                        _a.trys.push([9, 11, , 12]);
-                        return [4 /*yield*/, _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__.sp.web.lists
+                                .expand("AttachmentFiles")();
+                        }
+                        catch (err) {
+                        }
+                    }
+                    // If still not found, try to match by title (slug without ID)
+                    if (!spItem) {
+                        const titleFromSlug = slug
+                            ? slug.replace(/-(\d+)$/, "").replace(/-/g, " ")
+                            : "";
+                        try {
+                            const items = await _services_pnpClient__WEBPACK_IMPORTED_MODULE_3__.sp.web.lists
                                 .getByTitle("Announcements")
                                 .items.select("ID", "Title", "Description", "Detail", "Category", "Tag", "Date", "Time", "Slug", "Content", "Image", "Modified", "Created")
                                 .expand("AttachmentFiles")
-                                .filter("substringof('".concat(titleFromSlug, "', Title)"))
-                                .top(1)()];
-                    case 10:
-                        items = _a.sent();
-                        if (items && items.length > 0) {
-                            spItem = items[0];
+                                .filter(`substringof('${titleFromSlug}', Title)`)
+                                .top(1)();
+                            if (items && items.length > 0) {
+                                spItem = items[0];
+                            }
                         }
-                        return [3 /*break*/, 12];
-                    case 11:
-                        err_3 = _a.sent();
-                        console.warn("Item not found by title match");
-                        return [3 /*break*/, 12];
-                    case 12:
-                        if (spItem) {
-                            transformed = (0,_utils_announcementHelpers__WEBPACK_IMPORTED_MODULE_5__.transformSharePointToAnnouncement)(spItem);
-                            setAnnouncement(transformed);
+                        catch (err) {
                         }
-                        else {
-                            setError("Announcement not found");
-                        }
-                        return [3 /*break*/, 14];
-                    case 13:
-                        // If not using SharePoint, show error
-                        setError("SharePoint integration is required");
-                        _a.label = 14;
-                    case 14: return [3 /*break*/, 17];
-                    case 15:
-                        err_4 = _a.sent();
-                        console.error("Error loading announcement:", err_4);
-                        setError("Failed to load announcement");
-                        return [3 /*break*/, 17];
-                    case 16:
-                        setLoading(false);
-                        return [7 /*endfinally*/];
-                    case 17: return [2 /*return*/];
+                    }
+                    if (spItem) {
+                        const transformed = (0,_utils_announcementHelpers__WEBPACK_IMPORTED_MODULE_5__.transformSharePointToAnnouncement)(spItem);
+                        setAnnouncement(transformed);
+                    }
+                    else {
+                        setError("Announcement not found");
+                    }
                 }
-            });
-        }); };
+                else {
+                    // If not using SharePoint, show error
+                    setError("SharePoint integration is required");
+                }
+            }
+            catch (err) {
+                setError("Failed to load announcement");
+            }
+            finally {
+                setLoading(false);
+            }
+        };
         loadAnnouncement();
         window.scrollTo(0, 0);
     }, [slug, useSharePoint]);
@@ -367,10 +310,10 @@ var AnnouncementDetailWithSharePoint = function (_a) {
             react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].notFound },
                 react__WEBPACK_IMPORTED_MODULE_0__.createElement("h1", null, "Announcement Not Found"),
                 react__WEBPACK_IMPORTED_MODULE_0__.createElement("p", null, "The announcement you're looking for doesn't exist or has been removed."),
-                react__WEBPACK_IMPORTED_MODULE_0__.createElement("button", { onClick: function () { return navigate(basePath); }, className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].backButton }, "Back"))));
+                react__WEBPACK_IMPORTED_MODULE_0__.createElement("button", { onClick: () => navigate(basePath), className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].backButton }, "Back"))));
     }
-    var formatDate = function (dateString) {
-        var date = new Date(dateString);
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
         return date.toLocaleDateString("en-US", {
             year: "numeric",
             month: "long",
@@ -393,7 +336,7 @@ var AnnouncementDetailWithSharePoint = function (_a) {
                     react__WEBPACK_IMPORTED_MODULE_0__.createElement("time", { className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].heroDate, dateTime: announcement.date }, announcement.time || formatDate(announcement.date))))),
         react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].contentWrapper },
             react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].contentContainer },
-                announcement.content.sections.map(function (section, index) {
+                announcement.content.sections.map((section, index) => {
                     if (section.type === "text") {
                         return (react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { key: index, className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].textSection, dangerouslySetInnerHTML: { __html: section.content } }));
                     }
@@ -408,7 +351,7 @@ var AnnouncementDetailWithSharePoint = function (_a) {
                     return null;
                 }),
                 react__WEBPACK_IMPORTED_MODULE_0__.createElement("div", { className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].navigationSection },
-                    react__WEBPACK_IMPORTED_MODULE_0__.createElement("button", { onClick: function () { return navigate(basePath); }, className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].backToListButton, "aria-label": 'Back to announcements list' },
+                    react__WEBPACK_IMPORTED_MODULE_0__.createElement("button", { onClick: () => navigate(basePath), className: _AnnouncementDetail_module_scss__WEBPACK_IMPORTED_MODULE_2__["default"].backToListButton, "aria-label": 'Back to announcements list' },
                         react__WEBPACK_IMPORTED_MODULE_0__.createElement("svg", { width: '20', height: '20', viewBox: '0 0 20 20', fill: 'none', xmlns: 'http://www.w3.org/2000/svg', "aria-hidden": 'true' },
                             react__WEBPACK_IMPORTED_MODULE_0__.createElement("path", { d: 'M12.5 15L7.5 10L12.5 5', stroke: 'currentColor', strokeWidth: '2', strokeLinecap: 'round', strokeLinejoin: 'round' })),
                         "Back"))))));
@@ -435,8 +378,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-var AnnouncementRouter = function (_a) {
-    var _b = _a.basePath, basePath = _b === void 0 ? '/announcements' : _b;
+const AnnouncementRouter = ({ basePath = '/announcements' }) => {
     return (react__WEBPACK_IMPORTED_MODULE_0__.createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_2__.HashRouter, null,
         react__WEBPACK_IMPORTED_MODULE_0__.createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Routes, null,
             react__WEBPACK_IMPORTED_MODULE_0__.createElement(react_router_dom__WEBPACK_IMPORTED_MODULE_3__.Route, { path: "/announcements/:slug", element: react__WEBPACK_IMPORTED_MODULE_0__.createElement(_AnnouncementDetailWithSharePoint__WEBPACK_IMPORTED_MODULE_1__.AnnouncementDetailWithSharePoint, { basePath: basePath, useSharePoint: true }) }),
@@ -461,9 +403,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./Badge.module.scss */ 58927);
 
 
-var Badge = function (_a) {
-    var text = _a.text, _b = _a.variant, variant = _b === void 0 ? 'primary' : _b, _c = _a.size, size = _c === void 0 ? 'medium' : _c;
-    return (react__WEBPACK_IMPORTED_MODULE_0__.createElement("span", { className: "".concat(_Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].badge, " ").concat(_Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"][variant], " ").concat(_Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"][size]), role: "status", "aria-label": text }, text));
+const Badge = ({ text, variant = 'primary', size = 'medium' }) => {
+    return (react__WEBPACK_IMPORTED_MODULE_0__.createElement("span", { className: `${_Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"].badge} ${_Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"][variant]} ${_Badge_module_scss__WEBPACK_IMPORTED_MODULE_1__["default"][size]}`, role: "status", "aria-label": text }, text));
 };
 
 
@@ -480,7 +421,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
 /* harmony export */ });
 __webpack_require__(/*! ./Badge.module.css */ 27147);
-var styles = {
+const styles = {
     badge: 'badge_6dde0b79',
     primary: 'primary_6dde0b79',
     secondary: 'secondary_6dde0b79',
@@ -516,7 +457,9 @@ __webpack_require__.r(__webpack_exports__);
  * @param title - The announcement title
  * @returns A slugified version of the title
  */
-var generateSlug = function (title) {
+const generateSlug = (title) => {
+    if (!title)
+        return '';
     return title
         .toLowerCase()
         .trim()
@@ -530,17 +473,17 @@ var generateSlug = function (title) {
  * @param spItem - SharePoint list item
  * @returns IAnnouncement object
  */
-var transformSharePointToAnnouncement = function (spItem) {
+const transformSharePointToAnnouncement = (spItem) => {
     // Generate slug from title or use ID
-    var slug = spItem.Slug || generateSlug(spItem.Title) || "announcement-".concat(spItem.ID);
+    const slug = spItem.Slug || generateSlug(spItem.Title) || `announcement-${spItem.ID}`;
     // Get image URL
-    var heroImage = '';
+    let heroImage = '';
     if (spItem.AttachmentFiles && spItem.AttachmentFiles.length > 0) {
         heroImage = spItem.AttachmentFiles[0].ServerRelativeUrl;
     }
     else if (spItem.Image) {
         try {
-            var imageData = JSON.parse(spItem.Image);
+            const imageData = JSON.parse(spItem.Image);
             heroImage = imageData.serverRelativeUrl;
         }
         catch (_a) {
@@ -549,11 +492,11 @@ var transformSharePointToAnnouncement = function (spItem) {
         }
     }
     // Parse content sections - prefer Detail field over Description
-    var contentSections = [];
-    var detailContent = spItem.Detail || spItem.Description;
+    let contentSections = [];
+    const detailContent = spItem.Detail || spItem.Description;
     if (spItem.Content) {
         try {
-            var parsedContent = JSON.parse(spItem.Content);
+            const parsedContent = JSON.parse(spItem.Content);
             contentSections = parsedContent.sections || [];
         }
         catch (_b) {
@@ -577,10 +520,10 @@ var transformSharePointToAnnouncement = function (spItem) {
         ];
     }
     // Calculate time ago
-    var timeAgo = calculateTimeAgo(spItem.Modified || spItem.Created);
+    const timeAgo = calculateTimeAgo(spItem.Modified || spItem.Created);
     return {
         id: spItem.ID,
-        slug: slug,
+        slug,
         title: spItem.Title,
         description: spItem.Description || '',
         category: spItem.Category || 'General',
@@ -598,11 +541,11 @@ var transformSharePointToAnnouncement = function (spItem) {
  * @param dateString - ISO date string
  * @returns Human-readable time ago (e.g., "2 hours ago")
  */
-var calculateTimeAgo = function (dateString) {
-    var date = new Date(dateString);
-    var now = new Date();
-    var seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-    var intervals = {
+const calculateTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const intervals = {
         year: 31536000,
         month: 2592000,
         week: 604800,
@@ -613,11 +556,10 @@ var calculateTimeAgo = function (dateString) {
     if (seconds < 60) {
         return 'just now';
     }
-    for (var _i = 0, _a = Object.entries(intervals); _i < _a.length; _i++) {
-        var _b = _a[_i], unit = _b[0], secondsInUnit = _b[1];
-        var interval = Math.floor(seconds / secondsInUnit);
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+        const interval = Math.floor(seconds / secondsInUnit);
         if (interval >= 1) {
-            return "".concat(interval, " ").concat(unit).concat(interval > 1 ? 's' : '', " ago");
+            return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`;
         }
     }
     return 'just now';
@@ -627,8 +569,8 @@ var calculateTimeAgo = function (dateString) {
  * @param dateString - ISO date string
  * @returns Formatted date string
  */
-var formatDate = function (dateString) {
-    var date = new Date(dateString);
+const formatDate = (dateString) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -641,9 +583,8 @@ var formatDate = function (dateString) {
  * @param basePath - The base path for announcements
  * @returns The full URL for the announcement detail page
  */
-var getAnnouncementDetailUrl = function (slug, basePath) {
-    if (basePath === void 0) { basePath = '/announcements'; }
-    return "".concat(basePath, "/").concat(slug);
+const getAnnouncementDetailUrl = (slug, basePath = '/announcements') => {
+    return `${basePath}/${slug}`;
 };
 /**
  * Gets the announcement detail page URL using ID (fallback)
@@ -652,10 +593,9 @@ var getAnnouncementDetailUrl = function (slug, basePath) {
  * @param basePath - The base path for announcements
  * @returns The full URL for the announcement detail page
  */
-var getAnnouncementDetailUrlById = function (id, title, basePath) {
-    if (basePath === void 0) { basePath = '/announcements'; }
-    var slug = title ? generateSlug(title) : "announcement-".concat(id);
-    return "".concat(basePath, "/").concat(slug);
+const getAnnouncementDetailUrlById = (id, title, basePath = '/announcements') => {
+    const slug = title ? generateSlug(title) : `announcement-${id}`;
+    return `${basePath}/${slug}`;
 };
 
 
@@ -15239,6 +15179,602 @@ _webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.getCatalog = async fu
 
 /***/ }),
 
+/***/ 2737:
+/*!************************************************!*\
+  !*** ./node_modules/@pnp/sp/security/funcs.js ***!
+  \************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   breakRoleInheritance: () => (/* binding */ breakRoleInheritance),
+/* harmony export */   currentUserHasPermissions: () => (/* binding */ currentUserHasPermissions),
+/* harmony export */   getCurrentUserEffectivePermissions: () => (/* binding */ getCurrentUserEffectivePermissions),
+/* harmony export */   getUserEffectivePermissions: () => (/* binding */ getUserEffectivePermissions),
+/* harmony export */   hasPermissions: () => (/* binding */ hasPermissions),
+/* harmony export */   resetRoleInheritance: () => (/* binding */ resetRoleInheritance),
+/* harmony export */   userHasPermissions: () => (/* binding */ userHasPermissions)
+/* harmony export */ });
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./types.js */ 27815);
+/* harmony import */ var _spqueryable_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../spqueryable.js */ 96290);
+
+
+/**
+* Gets the effective permissions for the user supplied
+*
+* @param loginName The claims username for the user (ex: i:0#.f|membership|user@domain.com)
+*/
+async function getUserEffectivePermissions(loginName) {
+    const q = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.SPInstance)(this, "getUserEffectivePermissions(@user)");
+    q.query.set("@user", `'${loginName}'`);
+    return q();
+}
+/**
+ * Gets the effective permissions for the current user
+ */
+async function getCurrentUserEffectivePermissions() {
+    return (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.SPQueryable)(this, "EffectiveBasePermissions")();
+}
+/**
+ * Breaks the security inheritance at this level optinally copying permissions and clearing subscopes
+ *
+ * @param copyRoleAssignments If true the permissions are copied from the current parent scope
+ * @param clearSubscopes Optional. true to make all child securable objects inherit role assignments from the current object
+ */
+async function breakRoleInheritance(copyRoleAssignments = false, clearSubscopes = false) {
+    return (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.spPost)((0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.SPQueryable)(this, `breakroleinheritance(copyroleassignments=${copyRoleAssignments}, clearsubscopes=${clearSubscopes})`));
+}
+/**
+ * Removes the local role assignments so that it re-inherit role assignments from the parent object.
+ *
+ */
+async function resetRoleInheritance() {
+    return (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.spPost)((0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.SPQueryable)(this, "resetroleinheritance"));
+}
+/**
+ * Determines if a given user has the appropriate permissions
+ *
+ * @param loginName The user to check
+ * @param permission The permission being checked
+ */
+async function userHasPermissions(loginName, permission) {
+    const perms = await getUserEffectivePermissions.call(this, loginName);
+    return this.hasPermissions(perms, permission);
+}
+/**
+ * Determines if the current user has the requested permissions
+ *
+ * @param permission The permission we wish to check
+ */
+async function currentUserHasPermissions(permission) {
+    const perms = await getCurrentUserEffectivePermissions.call(this);
+    return this.hasPermissions(perms, permission);
+}
+/**
+ * Taken from sp.js, checks the supplied permissions against the mask
+ *
+ * @param value The security principal's permissions on the given object
+ * @param perm The permission checked against the value
+ */
+/* eslint-disable no-bitwise */
+function hasPermissions(value, perm) {
+    if (!perm) {
+        return true;
+    }
+    if (perm === _types_js__WEBPACK_IMPORTED_MODULE_0__.PermissionKind.FullMask) {
+        return (value.High & 32767) === 32767 && value.Low === 65535;
+    }
+    perm = perm - 1;
+    let num = 1;
+    if (perm >= 0 && perm < 32) {
+        num = num << perm;
+        return 0 !== (value.Low & num);
+    }
+    else if (perm >= 32 && perm < 64) {
+        num = num << perm - 32;
+        return 0 !== (value.High & num);
+    }
+    return false;
+}
+/* eslint-enable no-bitwise */
+
+
+/***/ }),
+
+/***/ 8330:
+/*!************************************************!*\
+  !*** ./node_modules/@pnp/sp/security/index.js ***!
+  \************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PermissionKind: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_3__.PermissionKind),
+/* harmony export */   RoleAssignment: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_3__.RoleAssignment),
+/* harmony export */   RoleAssignments: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_3__.RoleAssignments),
+/* harmony export */   RoleDefinition: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_3__.RoleDefinition),
+/* harmony export */   RoleDefinitions: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_3__.RoleDefinitions)
+/* harmony export */ });
+/* harmony import */ var _item_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./item.js */ 99851);
+/* harmony import */ var _list_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./list.js */ 51688);
+/* harmony import */ var _web_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./web.js */ 49392);
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types.js */ 27815);
+
+
+
+
+
+
+/***/ }),
+
+/***/ 99851:
+/*!***********************************************!*\
+  !*** ./node_modules/@pnp/sp/security/item.js ***!
+  \***********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _pnp_queryable__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @pnp/queryable */ 2464);
+/* harmony import */ var _items_types_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../items/types.js */ 93305);
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./types.js */ 27815);
+/* harmony import */ var _spqueryable_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../spqueryable.js */ 96290);
+/* harmony import */ var _funcs_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./funcs.js */ 2737);
+
+
+
+
+
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item, "roleAssignments", _types_js__WEBPACK_IMPORTED_MODULE_2__.RoleAssignments);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item, "firstUniqueAncestorSecurableObject", _spqueryable_js__WEBPACK_IMPORTED_MODULE_3__.SPInstance);
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.getUserEffectivePermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.getUserEffectivePermissions;
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.getCurrentUserEffectivePermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.getCurrentUserEffectivePermissions;
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.breakRoleInheritance = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.breakRoleInheritance;
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.resetRoleInheritance = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.resetRoleInheritance;
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.userHasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.userHasPermissions;
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.currentUserHasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.currentUserHasPermissions;
+_items_types_js__WEBPACK_IMPORTED_MODULE_1__._Item.prototype.hasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.hasPermissions;
+
+
+/***/ }),
+
+/***/ 51688:
+/*!***********************************************!*\
+  !*** ./node_modules/@pnp/sp/security/list.js ***!
+  \***********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _pnp_queryable__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @pnp/queryable */ 2464);
+/* harmony import */ var _lists_types_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../lists/types.js */ 71528);
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./types.js */ 27815);
+/* harmony import */ var _spqueryable_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../spqueryable.js */ 96290);
+/* harmony import */ var _funcs_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./funcs.js */ 2737);
+
+
+
+
+
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List, "roleAssignments", _types_js__WEBPACK_IMPORTED_MODULE_2__.RoleAssignments);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List, "firstUniqueAncestorSecurableObject", _spqueryable_js__WEBPACK_IMPORTED_MODULE_3__.SPInstance);
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.getUserEffectivePermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.getUserEffectivePermissions;
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.getCurrentUserEffectivePermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.getCurrentUserEffectivePermissions;
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.breakRoleInheritance = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.breakRoleInheritance;
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.resetRoleInheritance = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.resetRoleInheritance;
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.userHasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.userHasPermissions;
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.currentUserHasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.currentUserHasPermissions;
+_lists_types_js__WEBPACK_IMPORTED_MODULE_1__._List.prototype.hasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.hasPermissions;
+
+
+/***/ }),
+
+/***/ 27815:
+/*!************************************************!*\
+  !*** ./node_modules/@pnp/sp/security/types.js ***!
+  \************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   PermissionKind: () => (/* binding */ PermissionKind),
+/* harmony export */   RoleAssignment: () => (/* binding */ RoleAssignment),
+/* harmony export */   RoleAssignments: () => (/* binding */ RoleAssignments),
+/* harmony export */   RoleDefinition: () => (/* binding */ RoleDefinition),
+/* harmony export */   RoleDefinitions: () => (/* binding */ RoleDefinitions),
+/* harmony export */   _RoleAssignment: () => (/* binding */ _RoleAssignment),
+/* harmony export */   _RoleAssignments: () => (/* binding */ _RoleAssignments),
+/* harmony export */   _RoleDefinition: () => (/* binding */ _RoleDefinition),
+/* harmony export */   _RoleDefinitions: () => (/* binding */ _RoleDefinitions)
+/* harmony export */ });
+/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! tslib */ 31635);
+/* harmony import */ var _pnp_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @pnp/core */ 49671);
+/* harmony import */ var _pnp_queryable__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @pnp/queryable */ 2464);
+/* harmony import */ var _spqueryable_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../spqueryable.js */ 96290);
+/* harmony import */ var _site_groups_types_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../site-groups/types.js */ 99043);
+/* harmony import */ var _decorators_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ../decorators.js */ 43445);
+
+
+
+
+
+
+/**
+ * Describes a set of role assignments for the current scope
+ *
+ */
+let _RoleAssignments = class _RoleAssignments extends _spqueryable_js__WEBPACK_IMPORTED_MODULE_2__._SPCollection {
+    /**
+     * Gets the role assignment associated with the specified principal id from the collection.
+     *
+     * @param id The id of the role assignment
+     */
+    getById(id) {
+        return RoleAssignment(this).concat(`(${id})`);
+    }
+    /**
+     * Adds a new role assignment with the specified principal and role definitions to the collection
+     *
+     * @param principalId The id of the user or group to assign permissions to
+     * @param roleDefId The id of the role definition that defines the permissions to assign
+     *
+     */
+    async add(principalId, roleDefId) {
+        await (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spPost)(RoleAssignments(this, `addroleassignment(principalid=${principalId}, roledefid=${roleDefId})`));
+    }
+    /**
+     * Removes the role assignment with the specified principal and role definition from the collection
+     *
+     * @param principalId The id of the user or group in the role assignment
+     * @param roleDefId The id of the role definition in the role assignment
+     *
+     */
+    async remove(principalId, roleDefId) {
+        await (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spPost)(RoleAssignments(this, `removeroleassignment(principalid=${principalId}, roledefid=${roleDefId})`));
+    }
+};
+_RoleAssignments = (0,tslib__WEBPACK_IMPORTED_MODULE_4__.__decorate)([
+    (0,_decorators_js__WEBPACK_IMPORTED_MODULE_5__.defaultPath)("roleassignments")
+], _RoleAssignments);
+
+const RoleAssignments = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spInvokableFactory)(_RoleAssignments);
+/**
+ * Describes a role assignment
+ *
+ */
+class _RoleAssignment extends _spqueryable_js__WEBPACK_IMPORTED_MODULE_2__._SPInstance {
+    constructor() {
+        super(...arguments);
+        this.delete = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.deleteable)();
+    }
+    /**
+     * Gets the groups that directly belong to the access control list (ACL) for this securable object
+     *
+     */
+    get groups() {
+        return (0,_site_groups_types_js__WEBPACK_IMPORTED_MODULE_3__.SiteGroups)(this, "groups");
+    }
+    /**
+     * Gets the role definition bindings for this role assignment
+     *
+     */
+    get bindings() {
+        return (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.SPCollection)(this, "roledefinitionbindings");
+    }
+}
+const RoleAssignment = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spInvokableFactory)(_RoleAssignment);
+/**
+ * Describes a collection of role definitions
+ *
+ */
+let _RoleDefinitions = class _RoleDefinitions extends _spqueryable_js__WEBPACK_IMPORTED_MODULE_2__._SPCollection {
+    /**
+     * Gets the role definition with the specified id from the collection
+     *
+     * @param id The id of the role definition
+     *
+     */
+    getById(id) {
+        return RoleDefinition(this, `getById(${id})`);
+    }
+    /**
+     * Gets the role definition with the specified name
+     *
+     * @param name The name of the role definition
+     *
+     */
+    getByName(name) {
+        return RoleDefinition(this, `getbyname('${name}')`);
+    }
+    /**
+     * Gets the role definition with the specified role type
+     *
+     * @param roleTypeKind The roletypekind of the role definition (None=0, Guest=1, Reader=2, Contributor=3, WebDesigner=4, Administrator=5, Editor=6, System=7)
+     *
+     */
+    getByType(roleTypeKind) {
+        return RoleDefinition(this, `getbytype(${roleTypeKind})`);
+    }
+    /**
+     * Creates a role definition
+     *
+     * @param name The new role definition's name
+     * @param description The new role definition's description
+     * @param order The order in which the role definition appears
+     * @param basePermissions The permissions mask for this role definition, high and low values need to be converted to string
+     *
+     */
+    async add(name, description, order, basePermissions) {
+        const postBody = (0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_1__.body)({
+            BasePermissions: { "High": basePermissions.High.toString(), "Low": basePermissions.Low.toString() },
+            Description: description,
+            Name: name,
+            Order: order,
+        });
+        // __metadata: { "type": "SP.RoleDefinition" },
+        const data = await (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spPost)(this, postBody);
+        return {
+            data: data,
+            definition: this.getById(data.Id),
+        };
+    }
+};
+_RoleDefinitions = (0,tslib__WEBPACK_IMPORTED_MODULE_4__.__decorate)([
+    (0,_decorators_js__WEBPACK_IMPORTED_MODULE_5__.defaultPath)("roledefinitions")
+], _RoleDefinitions);
+
+const RoleDefinitions = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spInvokableFactory)(_RoleDefinitions);
+/**
+ * Describes a role definition
+ *
+ */
+class _RoleDefinition extends _spqueryable_js__WEBPACK_IMPORTED_MODULE_2__._SPInstance {
+    constructor() {
+        super(...arguments);
+        this.delete = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.deleteable)();
+    }
+    /**
+     * Updates this role definition with the supplied properties
+     *
+     * @param properties A plain object hash of values to update for the role definition
+     */
+    async update(properties) {
+        const s = ["BasePermissions"];
+        if ((0,_pnp_core__WEBPACK_IMPORTED_MODULE_0__.hOP)(properties, s[0]) !== undefined) {
+            const bpObj = properties[s[0]];
+            bpObj.High = bpObj.High.toString();
+            bpObj.Low = bpObj.Low.toString();
+        }
+        const data = await (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spPostMerge)(this, (0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_1__.body)(properties));
+        let definition = this;
+        if ((0,_pnp_core__WEBPACK_IMPORTED_MODULE_0__.hOP)(properties, "Name")) {
+            const parent = this.getParent(RoleDefinitions);
+            definition = parent.getByName(properties.Name);
+        }
+        return {
+            data,
+            definition,
+        };
+    }
+}
+const RoleDefinition = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_2__.spInvokableFactory)(_RoleDefinition);
+var PermissionKind;
+(function (PermissionKind) {
+    /**
+     * Has no permissions on the Site. Not available through the user interface.
+     */
+    PermissionKind[PermissionKind["EmptyMask"] = 0] = "EmptyMask";
+    /**
+     * View items in lists, documents in document libraries, and Web discussion comments.
+     */
+    PermissionKind[PermissionKind["ViewListItems"] = 1] = "ViewListItems";
+    /**
+     * Add items to lists, documents to document libraries, and Web discussion comments.
+     */
+    PermissionKind[PermissionKind["AddListItems"] = 2] = "AddListItems";
+    /**
+     * Edit items in lists, edit documents in document libraries, edit Web discussion comments
+     * in documents, and customize Web Part Pages in document libraries.
+     */
+    PermissionKind[PermissionKind["EditListItems"] = 3] = "EditListItems";
+    /**
+     * Delete items from a list, documents from a document library, and Web discussion
+     * comments in documents.
+     */
+    PermissionKind[PermissionKind["DeleteListItems"] = 4] = "DeleteListItems";
+    /**
+     * Approve a minor version of a list item or document.
+     */
+    PermissionKind[PermissionKind["ApproveItems"] = 5] = "ApproveItems";
+    /**
+     * View the source of documents with server-side file handlers.
+     */
+    PermissionKind[PermissionKind["OpenItems"] = 6] = "OpenItems";
+    /**
+     * View past versions of a list item or document.
+     */
+    PermissionKind[PermissionKind["ViewVersions"] = 7] = "ViewVersions";
+    /**
+     * Delete past versions of a list item or document.
+     */
+    PermissionKind[PermissionKind["DeleteVersions"] = 8] = "DeleteVersions";
+    /**
+     * Discard or check in a document which is checked out to another user.
+     */
+    PermissionKind[PermissionKind["CancelCheckout"] = 9] = "CancelCheckout";
+    /**
+     * Create, change, and delete personal views of lists.
+     */
+    PermissionKind[PermissionKind["ManagePersonalViews"] = 10] = "ManagePersonalViews";
+    /**
+     * Create and delete lists, add or remove columns in a list, and add or remove public views of a list.
+     */
+    PermissionKind[PermissionKind["ManageLists"] = 12] = "ManageLists";
+    /**
+     * View forms, views, and application pages, and enumerate lists.
+     */
+    PermissionKind[PermissionKind["ViewFormPages"] = 13] = "ViewFormPages";
+    /**
+     * Make content of a list or document library retrieveable for anonymous users through SharePoint search.
+     * The list permissions in the site do not change.
+     */
+    PermissionKind[PermissionKind["AnonymousSearchAccessList"] = 14] = "AnonymousSearchAccessList";
+    /**
+     * Allow users to open a Site, list, or folder to access items inside that container.
+     */
+    PermissionKind[PermissionKind["Open"] = 17] = "Open";
+    /**
+     * View pages in a Site.
+     */
+    PermissionKind[PermissionKind["ViewPages"] = 18] = "ViewPages";
+    /**
+     * Add, change, or delete HTML pages or Web Part Pages, and edit the Site using
+     * a Windows SharePoint Services compatible editor.
+     */
+    PermissionKind[PermissionKind["AddAndCustomizePages"] = 19] = "AddAndCustomizePages";
+    /**
+     * Apply a theme or borders to the entire Site.
+     */
+    PermissionKind[PermissionKind["ApplyThemeAndBorder"] = 20] = "ApplyThemeAndBorder";
+    /**
+     * Apply a style sheet (.css file) to the Site.
+     */
+    PermissionKind[PermissionKind["ApplyStyleSheets"] = 21] = "ApplyStyleSheets";
+    /**
+     * View reports on Site usage.
+     */
+    PermissionKind[PermissionKind["ViewUsageData"] = 22] = "ViewUsageData";
+    /**
+     * Create a Site using Self-Service Site Creation.
+     */
+    PermissionKind[PermissionKind["CreateSSCSite"] = 23] = "CreateSSCSite";
+    /**
+     * Create subsites such as team sites, Meeting Workspace sites, and Document Workspace sites.
+     */
+    PermissionKind[PermissionKind["ManageSubwebs"] = 24] = "ManageSubwebs";
+    /**
+     * Create a group of users that can be used anywhere within the site collection.
+     */
+    PermissionKind[PermissionKind["CreateGroups"] = 25] = "CreateGroups";
+    /**
+     * Create and change permission levels on the Site and assign permissions to users
+     * and groups.
+     */
+    PermissionKind[PermissionKind["ManagePermissions"] = 26] = "ManagePermissions";
+    /**
+     * Enumerate files and folders in a Site using Microsoft Office SharePoint Designer
+     * and WebDAV interfaces.
+     */
+    PermissionKind[PermissionKind["BrowseDirectories"] = 27] = "BrowseDirectories";
+    /**
+     * View information about users of the Site.
+     */
+    PermissionKind[PermissionKind["BrowseUserInfo"] = 28] = "BrowseUserInfo";
+    /**
+     * Add or remove personal Web Parts on a Web Part Page.
+     */
+    PermissionKind[PermissionKind["AddDelPrivateWebParts"] = 29] = "AddDelPrivateWebParts";
+    /**
+     * Update Web Parts to display personalized information.
+     */
+    PermissionKind[PermissionKind["UpdatePersonalWebParts"] = 30] = "UpdatePersonalWebParts";
+    /**
+     * Grant the ability to perform all administration tasks for the Site as well as
+     * manage content, activate, deactivate, or edit properties of Site scoped Features
+     * through the object model or through the user interface (UI). When granted on the
+     * root Site of a Site Collection, activate, deactivate, or edit properties of
+     * site collection scoped Features through the object model. To browse to the Site
+     * Collection Features page and activate or deactivate Site Collection scoped Features
+     * through the UI, you must be a Site Collection administrator.
+     */
+    PermissionKind[PermissionKind["ManageWeb"] = 31] = "ManageWeb";
+    /**
+     * Content of lists and document libraries in the Web site will be retrieveable for anonymous users through
+     * SharePoint search if the list or document library has AnonymousSearchAccessList set.
+     */
+    PermissionKind[PermissionKind["AnonymousSearchAccessWebLists"] = 32] = "AnonymousSearchAccessWebLists";
+    /**
+     * Use features that launch client applications. Otherwise, users must work on documents
+     * locally and upload changes.
+     */
+    PermissionKind[PermissionKind["UseClientIntegration"] = 37] = "UseClientIntegration";
+    /**
+     * Use SOAP, WebDAV, or Microsoft Office SharePoint Designer interfaces to access the Site.
+     */
+    PermissionKind[PermissionKind["UseRemoteAPIs"] = 38] = "UseRemoteAPIs";
+    /**
+     * Manage alerts for all users of the Site.
+     */
+    PermissionKind[PermissionKind["ManageAlerts"] = 39] = "ManageAlerts";
+    /**
+     * Create e-mail alerts.
+     */
+    PermissionKind[PermissionKind["CreateAlerts"] = 40] = "CreateAlerts";
+    /**
+     * Allows a user to change his or her user information, such as adding a picture.
+     */
+    PermissionKind[PermissionKind["EditMyUserInfo"] = 41] = "EditMyUserInfo";
+    /**
+     * Enumerate permissions on Site, list, folder, document, or list item.
+     */
+    PermissionKind[PermissionKind["EnumeratePermissions"] = 63] = "EnumeratePermissions";
+    /**
+     * Has all permissions on the Site. Not available through the user interface.
+     */
+    PermissionKind[PermissionKind["FullMask"] = 65] = "FullMask";
+})(PermissionKind || (PermissionKind = {}));
+
+
+/***/ }),
+
+/***/ 49392:
+/*!**********************************************!*\
+  !*** ./node_modules/@pnp/sp/security/web.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _pnp_queryable__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @pnp/queryable */ 2464);
+/* harmony import */ var _webs_types_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../webs/types.js */ 4970);
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./types.js */ 27815);
+/* harmony import */ var _spqueryable_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../spqueryable.js */ 96290);
+/* harmony import */ var _funcs_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./funcs.js */ 2737);
+
+
+
+
+
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web, "roleDefinitions", _types_js__WEBPACK_IMPORTED_MODULE_2__.RoleDefinitions);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web, "roleAssignments", _types_js__WEBPACK_IMPORTED_MODULE_2__.RoleAssignments);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web, "firstUniqueAncestorSecurableObject", _spqueryable_js__WEBPACK_IMPORTED_MODULE_3__.SPInstance);
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.getUserEffectivePermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.getUserEffectivePermissions;
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.getCurrentUserEffectivePermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.getCurrentUserEffectivePermissions;
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.breakRoleInheritance = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.breakRoleInheritance;
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.resetRoleInheritance = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.resetRoleInheritance;
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.userHasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.userHasPermissions;
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.currentUserHasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.currentUserHasPermissions;
+_webs_types_js__WEBPACK_IMPORTED_MODULE_1__._Web.prototype.hasPermissions = _funcs_js__WEBPACK_IMPORTED_MODULE_4__.hasPermissions;
+
+
+/***/ }),
+
+/***/ 7918:
+/*!***************************************************!*\
+  !*** ./node_modules/@pnp/sp/site-groups/index.js ***!
+  \***************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   SiteGroup: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_1__.SiteGroup),
+/* harmony export */   SiteGroups: () => (/* reexport safe */ _types_js__WEBPACK_IMPORTED_MODULE_1__.SiteGroups)
+/* harmony export */ });
+/* harmony import */ var _web_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./web.js */ 49036);
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./types.js */ 99043);
+
+
+
+
+/***/ }),
+
 /***/ 99043:
 /*!***************************************************!*\
   !*** ./node_modules/@pnp/sp/site-groups/types.js ***!
@@ -15332,6 +15868,39 @@ class _SiteGroup extends _spqueryable_js__WEBPACK_IMPORTED_MODULE_0__._SPInstanc
     }
 }
 const SiteGroup = (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_0__.spInvokableFactory)(_SiteGroup);
+
+
+/***/ }),
+
+/***/ 49036:
+/*!*************************************************!*\
+  !*** ./node_modules/@pnp/sp/site-groups/web.js ***!
+  \*************************************************/
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _pnp_queryable__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @pnp/queryable */ 2464);
+/* harmony import */ var _spqueryable_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../spqueryable.js */ 96290);
+/* harmony import */ var _webs_types_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../webs/types.js */ 4970);
+/* harmony import */ var _types_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./types.js */ 99043);
+/* harmony import */ var _security_web_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../security/web.js */ 49392);
+
+
+
+
+
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_2__._Web, "siteGroups", _types_js__WEBPACK_IMPORTED_MODULE_3__.SiteGroups);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_2__._Web, "associatedOwnerGroup", _types_js__WEBPACK_IMPORTED_MODULE_3__.SiteGroup);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_2__._Web, "associatedMemberGroup", _types_js__WEBPACK_IMPORTED_MODULE_3__.SiteGroup);
+(0,_pnp_queryable__WEBPACK_IMPORTED_MODULE_0__.addProp)(_webs_types_js__WEBPACK_IMPORTED_MODULE_2__._Web, "associatedVisitorGroup", _types_js__WEBPACK_IMPORTED_MODULE_3__.SiteGroup);
+_webs_types_js__WEBPACK_IMPORTED_MODULE_2__._Web.prototype.createDefaultAssociatedGroups = async function (groupNameSeed, siteOwner, copyRoleAssignments = false, clearSubscopes = true, siteOwner2) {
+    await this.breakRoleInheritance(copyRoleAssignments, clearSubscopes);
+    const q = (0,_webs_types_js__WEBPACK_IMPORTED_MODULE_2__.Web)(this, "createDefaultAssociatedGroups(userLogin=@u,userLogin2=@v,groupNameSeed=@s)");
+    q.query.set("@u", `'${siteOwner || ""}'`);
+    q.query.set("@v", `'${siteOwner2 || ""}'`);
+    q.query.set("@s", `'${groupNameSeed || ""}'`);
+    return (0,_spqueryable_js__WEBPACK_IMPORTED_MODULE_1__.spPost)(q);
+};
 
 
 /***/ }),
@@ -17075,7 +17644,7 @@ var __webpack_exports__ = {};
   \******************************************************************************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__)
+/* harmony export */   "default": () => (/* binding */ AnnouncementDetailPageWebPart)
 /* harmony export */ });
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ 85959);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
@@ -17091,21 +17660,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var AnnouncementDetailPageWebPartStrings__WEBPACK_IMPORTED_MODULE_5___default = /*#__PURE__*/__webpack_require__.n(AnnouncementDetailPageWebPartStrings__WEBPACK_IMPORTED_MODULE_5__);
 /* harmony import */ var _components_AnnouncementRouter__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./components/AnnouncementRouter */ 4076);
 /* harmony import */ var _services_pnpClient__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! ../../services/pnpClient */ 26852);
-var __extends = (undefined && undefined.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 
 
 
@@ -17114,32 +17668,24 @@ var __extends = (undefined && undefined.__extends) || (function () {
 
 
 
-var AnnouncementDetailPageWebPart = /** @class */ (function (_super) {
-    __extends(AnnouncementDetailPageWebPart, _super);
-    function AnnouncementDetailPageWebPart() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    AnnouncementDetailPageWebPart.prototype.onInit = function () {
+class AnnouncementDetailPageWebPart extends _microsoft_sp_webpart_base__WEBPACK_IMPORTED_MODULE_4__.BaseClientSideWebPart {
+    onInit() {
         // @pnp/sp inital setup
         (0,_services_pnpClient__WEBPACK_IMPORTED_MODULE_7__.initPnp)(this.context);
-        return _super.prototype.onInit.call(this);
-    };
-    AnnouncementDetailPageWebPart.prototype.render = function () {
+        return super.onInit();
+    }
+    render() {
         // Use the new router component by default
-        var element = react__WEBPACK_IMPORTED_MODULE_0__.createElement(_components_AnnouncementRouter__WEBPACK_IMPORTED_MODULE_6__.AnnouncementRouter, { basePath: '/announcements' });
+        const element = react__WEBPACK_IMPORTED_MODULE_0__.createElement(_components_AnnouncementRouter__WEBPACK_IMPORTED_MODULE_6__.AnnouncementRouter, { basePath: '/announcements' });
         react_dom__WEBPACK_IMPORTED_MODULE_1__.render(element, this.domElement);
-    };
-    AnnouncementDetailPageWebPart.prototype.onDispose = function () {
+    }
+    onDispose() {
         react_dom__WEBPACK_IMPORTED_MODULE_1__.unmountComponentAtNode(this.domElement);
-    };
-    Object.defineProperty(AnnouncementDetailPageWebPart.prototype, "dataVersion", {
-        get: function () {
-            return _microsoft_sp_core_library__WEBPACK_IMPORTED_MODULE_2__.Version.parse('1.0');
-        },
-        enumerable: false,
-        configurable: true
-    });
-    AnnouncementDetailPageWebPart.prototype.getPropertyPaneConfiguration = function () {
+    }
+    get dataVersion() {
+        return _microsoft_sp_core_library__WEBPACK_IMPORTED_MODULE_2__.Version.parse('1.0');
+    }
+    getPropertyPaneConfiguration() {
         return {
             pages: [
                 {
@@ -17159,10 +17705,8 @@ var AnnouncementDetailPageWebPart = /** @class */ (function (_super) {
                 }
             ]
         };
-    };
-    return AnnouncementDetailPageWebPart;
-}(_microsoft_sp_webpart_base__WEBPACK_IMPORTED_MODULE_4__.BaseClientSideWebPart));
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (AnnouncementDetailPageWebPart);
+    }
+}
 
 })();
 

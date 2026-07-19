@@ -2,12 +2,13 @@ import * as React from "react";
 import styles from "./SubpageTemplate.module.scss";
 import { ISubpageTemplateProps } from "./ISubpageTemplateProps";
 import { escape } from "@microsoft/sp-lodash-subset";
-import { IIconProps, Label, Pivot, PivotItem, SearchBox, Spinner, SpinnerSize } from "@fluentui/react";
+import { Pivot, PivotItem } from "@fluentui/react/lib/Pivot";
 import * as $ from "jquery";
 import { sp } from "../../../services/pnpClient";
 import * as moment from "moment";
 require("../assets/style.css");
-require("../assets/fabric.min.css");
+// fabric.min.css is loaded once via SPComponentLoader.loadCss in
+// SubpageTemplateWebPart.onInit instead of being inlined here (260 KB).
 
 export interface ISubpageTemplateState {
   isLoading: boolean;
@@ -40,7 +41,7 @@ export default class SubpageTemplate extends React.Component<ISubpageTemplatePro
           <div className="left">
             <div className="date">{moment(new Date()).format("dddd MMMM DD, YYYY")}</div>
             <h1 className="greeting">
-              {this.getGreeting()}, {this.props.userDisplayName.split(" ")[0]}
+              {this.getGreeting()}, {(this.props.userDisplayName || "").split(" ")[0] || "User"}
             </h1>
           </div>
 
@@ -147,25 +148,14 @@ export default class SubpageTemplate extends React.Component<ISubpageTemplatePro
   public async componentDidMount() {
     this.setState({ isLoading: true });
     try {
-      // Create 30-second delay promise
-      const delayPromise = new Promise((resolve) => {
-        setTimeout(resolve, 1000); // 1 seconds
-      });
+      await Promise.all([this.CheckLoginUserPermission()]);
 
-      // Race: data loads OR 30s passes (whichever first)
-      const dataPromises = [this.CheckLoginUserPermission()];
-
-      // Wait for ALL data + minimum 30s
-      await Promise.all([...dataPromises, delayPromise]);
-
-      // Update state with data (already returned from your methods)
       this.setState({ isLoading: false });
       const preLoader = document.getElementById("preLoader");
       if (preLoader) {
         preLoader.remove();
       }
     } catch (err) {
-      console.error(err);
       this.setState({ isLoading: false });
       const preLoader = document.getElementById("preLoader");
       if (preLoader) {
@@ -193,7 +183,6 @@ export default class SubpageTemplate extends React.Component<ISubpageTemplatePro
         }
       },
       error: function (data) {
-        console.log("Could not find Title");
       },
     });
   }

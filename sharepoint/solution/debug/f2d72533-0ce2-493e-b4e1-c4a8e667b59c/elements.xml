@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Elements xmlns="http://schemas.microsoft.com/sharepoint/">
+
+  <!-- Site columns backing the SOP Ratings companion list. The SopLibrary web
+       part writes rows of { Title, SOPFileId, Rating, UserId } to it. -->
+  <Field ID="{332193D1-C481-4982-BEC6-DCBC5138FA92}"
+         Name="SOPFileId"
+         DisplayName="SOP File Id"
+         Type="Number"
+         Decimals="0"
+         Required="FALSE"
+         Group="SOP Library" />
+  <Field ID="{313C1838-C595-4CFC-9EAB-A036AF0AD81F}"
+         Name="Rating"
+         DisplayName="Rating"
+         Type="Number"
+         Decimals="0"
+         Min="0"
+         Max="5"
+         Required="FALSE"
+         Group="SOP Library" />
+  <Field ID="{810D2BE6-ADBC-408D-98B9-1A59785E809B}"
+         Name="UserId"
+         DisplayName="User Id"
+         Type="Text"
+         Required="FALSE"
+         Group="SOP Library" />
+
+  <!-- Content type carrying the three columns onto the list. -->
+  <ContentType ID="0x01003D3CAD7A820A41D0BB79D86B787CABCE"
+               Name="SOP Rating"
+               Group="SOP Library"
+               Description="A single user's star rating for an SOP document">
+    <FieldRefs>
+      <FieldRef ID="{332193D1-C481-4982-BEC6-DCBC5138FA92}" Name="SOPFileId" />
+      <FieldRef ID="{313C1838-C595-4CFC-9EAB-A036AF0AD81F}" Name="Rating" />
+      <FieldRef ID="{810D2BE6-ADBC-408D-98B9-1A59785E809B}" Name="UserId" />
+    </FieldRefs>
+  </ContentType>
+
+  <!-- The list itself (generic custom list, TemplateType 100). -->
+  <ListInstance Title="SOP Ratings"
+                Description="Star ratings for SOP Library documents"
+                TemplateType="100"
+                Url="Lists/SOPRatings"
+                OnQuickLaunch="FALSE" />
+
+  <!-- Bind the content type to the list so SOPFileId/Rating/UserId become
+       real list columns and REST add()/update() succeed. -->
+  <ContentTypeBinding ContentTypeId="0x01003D3CAD7A820A41D0BB79D86B787CABCE"
+                      ListUrl="Lists/SOPRatings" />
+
+  <!-- Search-activity log feeding the "Most Searched" leaderboard. Each row is
+       one search-driven open of a document (Title + SOPFileId). Reuses the
+       SOPFileId site column defined above. -->
+  <ContentType ID="0x010018F5C743E5FC4D3FADE78A940D1DE4AC"
+               Name="SOP Search"
+               Group="SOP Library"
+               Description="A single search-driven open of an SOP document">
+    <FieldRefs>
+      <FieldRef ID="{332193D1-C481-4982-BEC6-DCBC5138FA92}" Name="SOPFileId" />
+    </FieldRefs>
+  </ContentType>
+
+  <ListInstance Title="SOP Searches"
+                Description="Search-activity log for SOP Library documents"
+                TemplateType="100"
+                Url="Lists/SOPSearches"
+                OnQuickLaunch="FALSE" />
+
+  <ContentTypeBinding ContentTypeId="0x010018F5C743E5FC4D3FADE78A940D1DE4AC"
+                      ListUrl="Lists/SOPSearches" />
+
+</Elements>

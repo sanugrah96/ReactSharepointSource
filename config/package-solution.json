@@ -3,9 +3,9 @@
   "solution": {
     "name": "sp-page-client-side-solution",
     "id": "fc3b7e4e-a510-4a91-95ba-bf315858c945",
-    "version": "1.0.0.0",
+    "version": "1.0.0.2",
     "includeClientSideAssets": true,
-    "skipFeatureDeployment": true,
+    "skipFeatureDeployment": false,
     "isDomainIsolated": false,
     "developer": {
       "name": "",
@@ -30,7 +30,12 @@
         "title": "sp-page Feature",
         "description": "The feature that activates elements of the sp-page solution.",
         "id": "f2d72533-0ce2-493e-b4e1-c4a8e667b59c",
-        "version": "1.0.0.0"
+        "version": "1.0.0.0",
+        "assets": {
+          "elementManifests": [
+            "elements.xml"
+          ]
+        }
       }
     ]
   },

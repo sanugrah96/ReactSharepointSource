@@ -36,22 +36,95 @@
   font-weight: 500;
 }
 
+/* Real bold faces so font-weight:600/700/bold resolve to a loaded file instead
+   of being synthesized (synthetic faux-bold renders soft/blurry). */
+@font-face {
+  font-family: "Druk Text Trial";
+  src: url("../assets/DrukTextBoldTrial.woff");
+  font-style: normal;
+  font-weight: 700;
+}
+@font-face {
+  font-family: "Helvetica Neue";
+  src: url("../assets/HelveticaNeueBold.woff");
+  font-style: normal;
+  font-weight: 700;
+}
+
 /* [data-automation-id="CanvasZone"] {
   background-color: #212121 !important;
 } */
+
+/* ── SharePoint app bar (left rail): custom global-nav hidden ────────────────
+   The custom rail (Discover/Publish/Build/OneDrive) is hidden per request. The
+   top suite-bar waffle/app launcher lives OUTSIDE #sp-appBar, so it — and access
+   to OneDrive / all apps via the launcher — stays. html/body kept dark so the
+   reclaimed strip reads as the theme, never white/orange. */
+
+#sp-appBar {
+  display: none !important;
+}
+
+/* Dark + slightly shorter SharePoint suite bar (modern-DOM coverage + height) */
+#SuiteNavWrapper,
+#suiteBarTop,
+[class^="o365cs-nav-header"],
+[class*="suiteBar"] {
+  background-color: #1f2226 !important;
+}
+#SuiteNavWrapper [class^="ms-Icon"]:before,
+#SuiteNavWrapper i {
+  color: #e8e8e8 !important;
+}
+
+/* Left-align the suite-bar search box (SharePoint centers it by default) */
+#SuiteNavWrapper {
+  justify-content: flex-start !important;
+}
+#sbox-container,
+#searchBoxContainer,
+#O365_SearchBoxContainer,
+#SuiteNavWrapper [class*="searchBox"],
+#SuiteNavWrapper [class*="SearchBox"],
+#SuiteNavWrapper [role="search"],
+.ms-srch-sb {
+  margin-left: 12px !important;
+  margin-right: auto !important;
+  left: auto !important;
+  right: auto !important;
+  transform: none !important;
+}
+
+/* Full-bleed: kill SharePoint's rounded corners across every page wrapper */
+#spPageCanvasContent,
+#spPageChromeAppDiv,
+#spoAppComponent,
+[data-automation-id="contentScrollRegion"],
+[data-automation-id="CanvasZone"],
+[data-automation-id="CanvasSection"],
+[data-automation-id="CanvasZone-SectionContainer"],
+[data-automation-id="CanvasControl"],
+[class*="CanvasZoneSectionContainer"],
+[class*="CanvasSection"],
+[class*="SectionContainer"],
+[class*="ControlZone"],
+[class*="Canvas"],
+[class*="canvas"] {
+  border-radius: 0 !important;
+}
 
 #O365_NavHeader,
 .o365sx-appName,
 .o365cs-base .o365sx-waffle,
 .o365cs-base .o365sx-button {
-  background-color: #e9e9e9 !important;
+  background-color: #1f2226 !important;
 }
 
 .o365cs-base [class^="ms-Icon--"]:before {
-  color: #6d7385;
+  color: #e8e8e8 !important;
 }
 #O365_AppName {
-  color: #6d7385;
+  color: #e8e8e8 !important;
 }
 
 [data-automationid="SiteHeader"],

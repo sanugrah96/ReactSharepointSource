@@ -58,11 +58,10 @@ export default class Celebration extends React.Component<ICelebrationProps, ICel
     try {
       const CelebrationDetails = await sp.web.lists.getByTitle("BirthdayWorkAnniversary").items.select("ID,Title,Date,CelebrationType,IconText").top(parseInt(item, 10))();
 
-      if (CelebrationDetails.length > 0) {
+      if (CelebrationDetails && Array.isArray(CelebrationDetails) && CelebrationDetails.length > 0) {
         this.setState({ celebrationData: CelebrationDetails });
       }
     } catch (error) {
-      console.log(error);
     }
   };
 }

@@ -32,7 +32,7 @@ export const AnnouncementDetailWithSharePoint: React.FC<
 
         if (useSharePoint) {
           // Try to extract ID from slug if it ends with a number
-          const idMatch = slug.match(/-(\d+)$/);
+          const idMatch = slug ? slug.match(/-(\d+)$/) : null;
           const id = idMatch ? parseInt(idMatch[1], 10) : null;
 
           let spItem = null;
@@ -65,9 +65,6 @@ export const AnnouncementDetailWithSharePoint: React.FC<
               spItem = items[0];
             }
           } catch (err) {
-            console.warn(
-              "Slug field might not exist, trying by ID or title match",
-            );
           }
 
           // If not found by slug, try by ID
@@ -94,15 +91,14 @@ export const AnnouncementDetailWithSharePoint: React.FC<
                 .expand("AttachmentFiles")
                 ()
             } catch (err) {
-              console.warn("Item not found by ID");
             }
           }
 
           // If still not found, try to match by title (slug without ID)
           if (!spItem) {
             const titleFromSlug = slug
-              .replace(/-(\d+)$/, "")
-              .replace(/-/g, " ");
+              ? slug.replace(/-(\d+)$/, "").replace(/-/g, " ")
+              : "";
             try {
               const items = await sp.web.lists
                 .getByTitle("Announcements")
@@ -130,7 +126,6 @@ export const AnnouncementDetailWithSharePoint: React.FC<
                 spItem = items[0];
               }
             } catch (err) {
-              console.warn("Item not found by title match");
             }
           }
 
@@ -145,7 +140,6 @@ export const AnnouncementDetailWithSharePoint: React.FC<
           setError("SharePoint integration is required");
         }
       } catch (err) {
-        console.error("Error loading announcement:", err);
         setError("Failed to load announcement");
       } finally {
         setLoading(false);

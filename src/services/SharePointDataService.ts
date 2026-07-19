@@ -24,7 +24,6 @@ export class SharePointDataService {
 
       return await query();
     } catch (error) {
-      console.error(`Error fetching items from ${listName}:`, error);
       return [];
     }
   }
@@ -50,7 +49,6 @@ export class SharePointDataService {
 
       return await query();
     } catch (error) {
-      console.error(`Error fetching items from ${siteUrl}/${listName}:`, error);
       return [];
     }
   }
@@ -73,7 +71,6 @@ export class SharePointDataService {
 
       return await query();
     } catch (error) {
-      console.error(`Error fetching items from ${listUrl}:`, error);
       return [];
     }
   }
@@ -97,7 +94,6 @@ export class SharePointDataService {
       const results = await sp.search(searchConfig);
       return results.PrimarySearchResults || [];
     } catch (error) {
-      console.error("Error searching across sites:", error);
       return [];
     }
   }

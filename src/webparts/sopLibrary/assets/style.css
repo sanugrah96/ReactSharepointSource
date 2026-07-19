@@ -1,0 +1,724 @@
+/* ── SOP Library — The Source dark theme ───────────────────────────────────── */
+
+/* ── SharePoint app bar (left rail): custom global-nav hidden ────────────────
+   The custom rail (Discover/Publish/Build/OneDrive) is hidden per request. The
+   top suite-bar waffle/app launcher lives OUTSIDE #sp-appBar, so it — and access
+   to OneDrive / all apps via the launcher — stays. html/body kept dark so the
+   reclaimed strip reads as the theme, never white/orange. */
+
+#sp-appBar {
+  display: none !important;
+}
+
+/* Full-bleed: kill SharePoint's rounded corners across every page wrapper */
+#spPageCanvasContent,
+#spPageChromeAppDiv,
+#spoAppComponent,
+[data-automation-id="contentScrollRegion"],
+[data-automation-id="CanvasZone"],
+[data-automation-id="CanvasSection"],
+[data-automation-id="CanvasZone-SectionContainer"],
+[data-automation-id="CanvasControl"],
+[class*="CanvasZoneSectionContainer"],
+[class*="CanvasSection"],
+[class*="SectionContainer"],
+[class*="ControlZone"],
+[class*="Canvas"],
+[class*="canvas"] {
+  border-radius: 0 !important;
+}
+
+.sop-library {
+  background: #1f2226;
+  color: #e8e8e8;
+  font-family: "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  min-height: 400px;
+  padding: 0 0 40px;
+}
+
+/* ── Title bar ───────────────────────────────────────────────────────────────── */
+
+.sop-titlebar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0;
+  flex-wrap: wrap;
+}
+
+.sop-title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.sop-doc-count {
+  font-size: 14px;
+  color: #8a8d94;
+  white-space: nowrap;
+}
+
+/* ── Chatbot placeholder ─────────────────────────────────────────────────────── */
+
+.sop-chatbot-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 72px;
+  background: #2a2d33;
+  border: 2px dashed #3a3d44;
+  border-radius: 10px;
+  margin: 20px 20px 0;
+  color: #7a7d84;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.sop-chatbot-icon {
+  font-size: 22px;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────────── */
+
+.sop-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  flex-wrap: wrap;
+}
+
+.sop-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.sop-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.sop-search {
+  width: 100%;
+  box-sizing: border-box;
+  background: #2a2d33;
+  border: 1px solid #3a3d44;
+  border-radius: 8px;
+  color: #e8e8e8;
+  font-size: 14px;
+  padding: 10px 36px 10px 36px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sop-search::placeholder {
+  color: #6a6d74;
+}
+
+.sop-search:focus {
+  border-color: #ff7a00;
+}
+
+.sop-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #8a8d94;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+}
+
+.sop-search-clear:hover {
+  color: #e8e8e8;
+}
+
+/* ── Phase toggle ────────────────────────────────────────────────────────────── */
+
+.sop-phase-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.sop-phase-btn {
+  padding: 8px 16px;
+  background: #2a2d33;
+  border: 1px solid #3a3d44;
+  border-radius: 6px;
+  color: #b0b3ba;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.sop-phase-btn:hover {
+  border-color: #ff7a00;
+  color: #ff7a00;
+}
+
+.sop-phase-btn.sop-phase-active {
+  background: #ff7a00;
+  border-color: #ff7a00;
+  color: #ffffff;
+}
+
+/* ── Search results header ───────────────────────────────────────────────────── */
+
+.sop-search-results {
+  margin: 0 20px;
+}
+
+.sop-results-header {
+  font-size: 13px;
+  color: #8a8d94;
+  padding: 0 20px 10px;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────────── */
+
+.sop-section {
+  margin: 14px 20px 0;
+  background: #252830;
+  border: 1px solid #2e3138;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.sop-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.sop-section-header:hover {
+  background: #2c2f38;
+}
+
+.sop-section-header-static {
+  cursor: default;
+}
+
+.sop-section-header-static:hover {
+  background: transparent;
+}
+
+.sop-accent-bar {
+  width: 4px;
+  height: 20px;
+  background: #ff7a00;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Numbered section badge (e.g. orange "2") */
+.sop-section-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: #ff7a00;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sop-section-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0f0f0;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+
+.sop-section-count {
+  font-size: 12px;
+  color: #6a6d74;
+  background: #1f2226;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* ── Chevron ─────────────────────────────────────────────────────────────────── */
+
+.sop-chevron {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sop-chevron::before {
+  content: '';
+  display: block;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid #8a8d94;
+  border-bottom: 2px solid #8a8d94;
+  transform: rotate(45deg);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  transition: transform 0.2s;
+}
+
+.sop-chevron.sop-chevron-up::before {
+  transform: rotate(-135deg);
+  top: 6px;
+}
+
+/* ── Section body ────────────────────────────────────────────────────────────── */
+
+.sop-section-body {
+  border-top: 1px solid #2e3138;
+}
+
+/* ── Subsections ─────────────────────────────────────────────────────────────── */
+
+.sop-subsection {
+  border-bottom: 1px solid #2a2d33;
+}
+
+.sop-subsection:last-child {
+  border-bottom: none;
+}
+
+.sop-subsection-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px 12px 28px;
+  cursor: pointer;
+  user-select: none;
+  background: #202328;
+  transition: background 0.15s;
+}
+
+.sop-subsection-header:hover {
+  background: #272a32;
+}
+
+.sop-subsection-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8cad0;
+  flex: 1;
+}
+
+.sop-subsection-count {
+  font-size: 11px;
+  color: #6a6d74;
+  background: #2a2d33;
+  padding: 2px 8px;
+  border-radius: 10px;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ── File rows ───────────────────────────────────────────────────────────────── */
+
+.sop-file-list {
+  padding: 4px 0;
+}
+
+.sop-file-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid #1f2226;
+  border-left: 3px solid transparent;
+}
+
+.sop-file-row:last-child {
+  border-bottom: none;
+}
+
+.sop-file-row:hover {
+  background: #2e3240;
+}
+
+/* Interactive playbook — orange accent + tint */
+.sop-file-interactive {
+  border-left-color: #ff7a00;
+  background: rgba(255, 122, 0, 0.06);
+}
+.sop-file-interactive .sop-file-icon {
+  color: #ff7a00;
+}
+
+.sop-file-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.sop-file-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sop-file-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8e8e8;
+  line-height: 1.3;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sop-file-row:hover .sop-file-name {
+  color: #ff9a30;
+}
+
+/* "INTERACTIVE PLAYBOOK" badge */
+.sop-interactive-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  background: #ff7a00;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* Download button — revealed on row hover */
+.sop-download-btn {
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid #ff7a00;
+  color: #ff7a00;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+}
+.sop-file-row:hover .sop-download-btn,
+.sop-download-btn:focus {
+  opacity: 1;
+}
+.sop-download-btn:hover {
+  background: #ff7a00;
+  color: #ffffff;
+}
+
+.sop-file-meta {
+  font-size: 11px;
+  color: #7a7d84;
+  line-height: 1.4;
+}
+
+.sop-breadcrumb {
+  color: #5a5d64;
+}
+
+/* ── Star ratings ────────────────────────────────────────────────────────────── */
+
+.sop-rating {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.sop-star {
+  font-size: 13px;
+  color: #3a3d44;
+}
+
+.sop-star-filled {
+  color: #ff7a00;
+}
+
+.sop-rating-meta {
+  font-size: 11px;
+  color: #7a7d84;
+  margin-left: 4px;
+}
+
+/* ── Interactive "rate this SOP" control ─────────────────────────────────────── */
+
+.sop-rating-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.sop-rating-input-label {
+  font-size: 11px;
+  color: #7a7d84;
+}
+
+.sop-rating-input-stars {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.sop-star-input {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1;
+  color: #3a3d44;
+  cursor: pointer;
+}
+
+.sop-star-input-filled {
+  color: #ff7a00;
+}
+
+.sop-star-input:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.sop-rating-saving {
+  font-size: 11px;
+  color: #7a7d84;
+  font-style: italic;
+}
+
+.sop-rating-error {
+  font-size: 11px;
+  color: #ff5c5c;
+}
+
+/* ── Popular SOPs — two activity-driven leaderboards ─────────────────────────── */
+
+.sop-popular-wrap {
+  margin: 16px 20px 8px;
+}
+
+.sop-popular-head {
+  margin-bottom: 14px;
+}
+
+.sop-popular-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.sop-popular-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #8a8d94;
+}
+
+.sop-popular-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.sop-pop-col {
+  background: #1c1f25;
+  border: 1px solid #2a2d33;
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.sop-pop-col-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sop-pop-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sop-pop-dot.dot-blue   { background: #4a90e2; }
+.sop-pop-dot.dot-orange { background: #ff7a00; }
+
+.sop-pop-col-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: #b0b3ba;
+}
+
+.sop-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 4px;
+  cursor: pointer;
+  border-bottom: 1px solid #23262d;
+  transition: background 0.12s;
+}
+.sop-pop-row:last-child { border-bottom: none; }
+.sop-pop-row:hover { background: #262b34; }
+
+.sop-pop-rank {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #2e3138;
+  color: #b0b3ba;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Podium colours for the top three */
+.sop-pop-rank-1 { background: #f5b321; color: #1f2226; }
+.sop-pop-rank-2 { background: #b8bcc4; color: #1f2226; }
+.sop-pop-rank-3 { background: #e8843c; color: #1f2226; }
+
+.sop-pop-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sop-pop-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8e8e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sop-pop-row:hover .sop-pop-name { color: #ff9a30; }
+
+.sop-pop-sub {
+  font-size: 11px;
+  color: #7a7d84;
+}
+
+.sop-pop-metric {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #8a8d94;
+  white-space: nowrap;
+}
+
+.sop-pop-empty {
+  padding: 18px 4px;
+  font-size: 13px;
+  color: #6a6d74;
+  font-style: italic;
+}
+
+@media (max-width: 720px) {
+  .sop-popular-cols { grid-template-columns: 1fr; }
+}
+
+/* ── Loading / error / empty ─────────────────────────────────────────────────── */
+
+.sop-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 200px;
+  color: #7a7d84;
+  font-size: 14px;
+}
+
+.sop-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #2e3138;
+  border-top-color: #ff7a00;
+  border-radius: 50%;
+  animation: sopSpin 0.9s linear infinite;
+}
+
+@keyframes sopSpin {
+  to { transform: rotate(360deg); }
+}
+
+.sop-error {
+  margin: 24px 20px;
+  padding: 20px;
+  background: #2a1a1a;
+  border: 1px solid #5a2a2a;
+  border-radius: 8px;
+  color: #f08080;
+  font-size: 14px;
+}
+
+.sop-error p {
+  margin: 6px 0 0;
+  color: #c08080;
+  font-size: 13px;
+}
+
+.sop-empty {
+  margin: 40px 20px;
+  text-align: center;
+  color: #6a6d74;
+  font-size: 14px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .sop-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sop-phase-toggle {
+    justify-content: center;
+  }
+  .sop-file-row {
+    padding: 10px 16px;
+  }
+  .sop-section {
+    margin: 10px 10px 0;
+  }
+}

@@ -17,6 +17,12 @@ import {
   IFilePickerResult,
 } from "@pnp/spfx-property-controls/lib/PropertyFieldFilePicker";
 import { initPnp } from "../../services/pnpClient";
+import { SPComponentLoader } from '@microsoft/sp-loader';
+
+// Fabric Core 9.6.1 — same stylesheet previously require()'d into the bundle
+// (rule-identical, verified); loadCss dedupes by URL across web parts.
+const FABRIC_CORE_CSS =
+  'https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/9.6.1/css/fabric.min.css';
 
 export interface IHomeWebPartProps {
   description: string;
@@ -31,6 +37,7 @@ export interface IHomeWebPartProps {
   videosHomeBannerFilePicker: IFilePickerResult;
   heroVideoFilePicker: IFilePickerResult;
   heroVideoUrl: string;
+  sopLibraryName: string;
 }
 
 export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps> {
@@ -43,21 +50,7 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
     // @pnp/sp inital setup
     initPnp(this.context);
 
-
-    const style = document.createElement("style");
-    style.textContent = `
-  #theSourceBootOverlay{position:fixed;inset:0;background:#111;z-index:2147483647}
-`;
-    document.head.appendChild(style);
-
-    const overlay = document.createElement("div");
-    overlay.id = "theSourceBootOverlay";
-    document.body.appendChild(overlay);
-
-    // remove overlay when your main webpart/app is ready
-    window.addEventListener("theSource:ready", () => overlay.remove());
-
-    window.dispatchEvent(new Event("theSource:ready"));
+    SPComponentLoader.loadCss(FABRIC_CORE_CSS);
 
     return super.onInit();
   }
@@ -70,7 +63,7 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName,
+        userDisplayName: this.context.pageContext?.user?.displayName || "User",
         announcementTitle: this.properties.announcementTitle ? this.properties.announcementTitle : "ANNOUNCEMENTS",
         announcementDescription: this.properties.announcementDescription ? this.properties.announcementDescription : "Stay informed with the latest company updates, policy changes, leadership messages, and important organizational news.",
         announcementHomeBannerFilePicker: this.properties.announcementHomeBannerFilePicker,
@@ -82,8 +75,9 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
         videosHomeBannerFilePicker: this.properties.videosHomeBannerFilePicker,
         heroVideoFilePicker: this.properties.heroVideoFilePicker,
         heroVideoUrl: this.properties.heroVideoUrl,
+        sopLibraryName: this.properties.sopLibraryName,
         spfxContext: this.context,
-        siteUrl: this.context.pageContext.web.absoluteUrl.split('/sites')[0],
+        siteUrl: this.context.pageContext?.web?.absoluteUrl ? this.context.pageContext.web.absoluteUrl.split('/sites')[0] : "",
       }
     );
 
@@ -154,11 +148,9 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
                   onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
                   properties: this.properties,
                   onSave: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.announcementHomeBannerFilePicker = e;
                   },
                   onChanged: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.announcementHomeBannerFilePicker = e;
                   },
                   buttonLabel: "Image",
@@ -184,11 +176,9 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
                   onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
                   properties: this.properties,
                   onSave: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.companyEventHomeBannerFilePicker = e;
                   },
                   onChanged: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.companyEventHomeBannerFilePicker = e;
                   },
                   buttonLabel: "Image",
@@ -239,11 +229,9 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
                   onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
                   properties: this.properties,
                   onSave: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.videosHomeBannerFilePicker = e;
                   },
                   onChanged: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.videosHomeBannerFilePicker = e;
                   },
                   buttonLabel: "Image",
@@ -251,6 +239,16 @@ export default class HomeWebPart extends BaseClientSideWebPart<IHomeWebPartProps
                   key: "FilePickerID",
                   filePickerResult: this.properties.videosHomeBannerFilePicker,
                   hideLocalUploadTab: true,
+                }),
+              ]
+            },
+            {
+              groupName: "SOP Library",
+              isCollapsed: true,
+              groupFields: [
+                PropertyPaneTextField("sopLibraryName", {
+                  label: "SOP document library name",
+                  description: "Exact name of the SharePoint document library that holds the SOP files (e.g. 'SOP Library' or 'Documents'). Opened from the SOP Library quick link.",
                 }),
               ]
             }

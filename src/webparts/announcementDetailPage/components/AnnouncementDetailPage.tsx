@@ -2,9 +2,6 @@ import * as React from "react";
 import styles from "./AnnouncementDetailPage.module.scss";
 import { IAnnouncementDetailPageProps } from "./IAnnouncementDetailPageProps";
 import { escape } from "@microsoft/sp-lodash-subset";
-import { Label, Pivot, PivotItem } from "@fluentui/react";
-import * as moment from "moment";
-import * as $ from "jquery";
 import { sp } from "../../../services/pnpClient";
 import {
   Accordion,
@@ -61,12 +58,16 @@ export default class AnnouncementDetailPage extends React.Component<
               <div className='card-row '>
                 {this.state.announcementData.length > 0 &&
                   this.state.announcementData.map((ele, ind) => {
-                    let imageURL =
-                      ele.AttachmentFiles.length > 0
-                        ? ele.AttachmentFiles[0].ServerRelativeUrl
-                        : ele.Image
-                          ? JSON.parse(ele.Image).serverRelativeUrl
-                          : '';
+                    let imageURL = '';
+                    try {
+                      if (ele.AttachmentFiles && ele.AttachmentFiles.length > 0) {
+                        imageURL = ele.AttachmentFiles[0].ServerRelativeUrl;
+                      } else if (ele.Image) {
+                        imageURL = JSON.parse(ele.Image).serverRelativeUrl || '';
+                      }
+                    } catch (e) {
+                      imageURL = '';
+                    }
                     return (
                       <a
                         href={ele.Link ? ele.Link.Url : "#"}
@@ -122,12 +123,12 @@ export default class AnnouncementDetailPage extends React.Component<
         this.pagination(this.state.currentPage, CompanyNewsDetails);
       }
     } catch (error) {
-      console.log(error);
     }
   };
 
   // function to set pagination
   public pagination(crntPage, libraryData) {
+    if (!libraryData || !Array.isArray(libraryData)) return;
     var startCount = (crntPage - 1) * viewCount;
     var endCount = crntPage * viewCount;
     let pagedArr = libraryData.slice(startCount, endCount);

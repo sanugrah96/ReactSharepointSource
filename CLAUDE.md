@@ -13,9 +13,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — produce a debug bundle in `lib/` (alias for `gulp bundle`).
 - `npm run clean` — wipe `lib/`, `temp/`, `dist/`.
 
-For production builds and packaging, call gulp directly (npm scripts do not expose `--ship`):
+For production builds and packaging, call gulp directly (npm scripts do not expose `--ship`). **Always `gulp clean` first** — without it, stale hash-variant bundles from previous builds accumulate in `temp/deploy` and get packed into the `.sppkg` (~10 stale copies of every bundle ≈ 21 MB package instead of ~8 MB):
 
 ```sh
+PATH="/opt/homebrew/opt/node@22/bin:$PATH" npx gulp clean
 PATH="/opt/homebrew/opt/node@22/bin:$PATH" npx gulp bundle --ship
 PATH="/opt/homebrew/opt/node@22/bin:$PATH" npx gulp package-solution --ship
 ```
@@ -27,6 +28,16 @@ If you bypass the npm scripts and invoke `gulp` directly, prefix PATH yourself:
 ```sh
 PATH="/opt/homebrew/opt/node@22/bin:$PATH" npx gulp bundle
 ```
+
+### Bundle-size guardrails (do not regress)
+
+- `gulpfile.js` has a `ContextReplacementPlugin` that strips all moment locales except `en` from every bundle. Do not call `moment.locale(...)` with a non-en locale without removing that plugin.
+- `xlsx` and `exceljs` are **lazy-loaded** via dynamic `import()` inside `Home.tsx`'s bulk-upload handlers — never re-add top-level imports for them.
+- The SopLibrary component is `React.lazy`-loaded inside Home (route `#/sop-library`).
+- `@fluentui/react` must be imported via **path imports** (`@fluentui/react/lib/<Control>`), never the root barrel.
+- Fabric Core CSS is NOT bundled: each web part that needs it calls `SPComponentLoader.loadCss` with the Fabric Core 9.6.1 CDN URL in `onInit` (see `HomeWebPart.ts`). The old `src/webparts/*/assets/fabric.min.css` copies are no longer require()'d.
+- `moment-timezone` was removed — UTC→local conversion uses `moment.utc(x).local()`.
+- `tsconfig.json` targets `es2017` (matches the SPFx 1.21 evergreen-browser baseline).
 
 TSLint was removed in the SPFx 1.21 upgrade — `tslint.json` has been renamed to `tslint.json.bak` to prevent the `rush-stack-compiler-4.7` lint task from throwing. No `.eslintrc.js` is present yet; the lint step passes as a no-op. `gulpfile.js` has three suppressions so warnings don't break ship builds:
 - `build.addSuppression(/Warning - \[tslint\]/)` — legacy tslint log lines
@@ -61,6 +72,8 @@ Web parts that take banner imagery use `PropertyFieldFilePicker` from `@pnp/spfx
 ### Solution packaging
 
 Solution metadata lives in `config/package-solution.json` (solution id `fc3b7e4e-a510-4a91-95ba-bf315858c945`, package `sharepoint/solution/sp-page.sppkg`). `*.sppkg` is gitignored — do not commit the built package.
+
+`sharepoint/assets/elements.xml` provisions the two SOP Library companion lists — `SOP Ratings` (`Lists/SOPRatings`) and `SOP Searches` (`Lists/SOPSearches`) — with their site columns/content types. For that feature to actually run, `skipFeatureDeployment` is `false` (not the SPFx default `true`), which means the app must be **added to each site** (Site Contents → Add an app) to activate provisioning — this applies to the whole solution, so every web part now expects the app added on the target site. The `SopLibrary` component only reads/writes rows on these lists at runtime (needs Contribute), never creates them.
 
 ### Teams icons
 

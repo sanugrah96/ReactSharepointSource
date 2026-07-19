@@ -15,14 +15,14 @@
 
 @font-face {
   font-family: "Druk Text Trial";
-  src: url("../assets/DrukTextMediumTrial.woff");
+  src: url("../assets/DrukTextBoldTrial.woff");
   font-style: normal;
   font-weight: 700;
 }
 
 @font-face {
   font-family: "Druk Text Trial";
-  src: url("../assets/DrukTextMediumTrial.woff");
+  src: url("../assets/DrukTextHeavyTrial.woff");
   font-style: normal;
   font-weight: 900;
 }
@@ -44,7 +44,7 @@
 
 @font-face {
   font-family: "Helvetica Neue";
-  src: url("../assets/HelveticaNeue-MediumExt.woff");
+  src: url("../assets/HelveticaNeueBold.woff");
   font-style: normal;
   font-weight: 700;
 }

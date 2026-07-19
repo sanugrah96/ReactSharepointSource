@@ -2,7 +2,7 @@ import * as React from 'react';
 import styles from './Banner.module.scss';
 import { IBannerProps } from './IBannerProps';
 import { escape } from '@microsoft/sp-lodash-subset';
-import { Icon } from '@fluentui/react';
+import { Icon } from '@fluentui/react/lib/Icon';
 
 require('../assets/style.css');
 

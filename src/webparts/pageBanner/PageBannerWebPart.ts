@@ -18,6 +18,12 @@ import {
   IFilePickerResult,
 } from "@pnp/spfx-property-controls/lib/PropertyFieldFilePicker";
 import { initPnp } from "../../services/pnpClient";
+import { SPComponentLoader } from '@microsoft/sp-loader';
+
+// Fabric Core 9.6.1 — same stylesheet previously require()'d into the bundle
+// (rule-identical, verified); loadCss dedupes by URL across web parts.
+const FABRIC_CORE_CSS =
+  'https://static2.sharepointonline.com/files/fabric/office-ui-fabric-core/9.6.1/css/fabric.min.css';
 
 export interface IPageBannerWebPartProps {
   description: string;
@@ -36,6 +42,8 @@ export default class PageBannerWebPart extends BaseClientSideWebPart<IPageBanner
     this._environmentMessage = this._getEnvironmentMessage();
     initPnp(this.context);
 
+    SPComponentLoader.loadCss(FABRIC_CORE_CSS);
+
     return super.onInit();
   }
 
@@ -47,11 +55,11 @@ export default class PageBannerWebPart extends BaseClientSideWebPart<IPageBanner
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName,
+        userDisplayName: this.context.pageContext?.user?.displayName || "User",
         Title: this.properties.Title ? this.properties.Title : "The Source Company Announcements",
         Description: this.properties.Description ? this.properties.Description : "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor. incididunt ut labore et dolore magna aliqua...",
         HomeBannerFilePicker: this.properties.HomeBannerFilePicker,
-        siteUrl: this.context.pageContext.web.absoluteUrl,
+        siteUrl: this.context.pageContext?.web?.absoluteUrl || "",
         search: this.properties.search ? this.properties.search : false,
       }
     );
@@ -110,11 +118,9 @@ export default class PageBannerWebPart extends BaseClientSideWebPart<IPageBanner
                   onPropertyChange: this.onPropertyPaneFieldChanged.bind(this),
                   properties: this.properties,
                   onSave: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.HomeBannerFilePicker = e;
                   },
                   onChanged: (e: IFilePickerResult) => {
-                    console.log(e);
                     this.properties.HomeBannerFilePicker = e;
                   },
                   buttonLabel: "Image",

@@ -17,4 +17,5 @@ export interface IHomeProps {
   heroVideoUrl: string;
   spfxContext: any;
   siteUrl: any;
+  sopLibraryName: string;
 }
